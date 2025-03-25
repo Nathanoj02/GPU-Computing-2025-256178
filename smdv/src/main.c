@@ -1,5 +1,6 @@
-#include "smdv.h"
 #include "data.h"
+#include "smdv.h"
+#include "smdv_cuda.cuh"
 
 #include <malloc.h>
 
@@ -15,9 +16,9 @@ int main()
 
     mul(res, row, col, val, arr, 6, 7);
 
-    for (int i = 0; i < 6; i++) {
-        printf("%.0lf ", res[i]);
-    }
+    // for (int i = 0; i < 6; i++) {
+    //     printf("%.0lf ", res[i]);
+    // }
 
     printf("\n\n");
 
