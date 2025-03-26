@@ -1,10 +1,10 @@
-#include "smdv.h"
+#include "smdv.cuh"
 
 #include <stdio.h>
 
 void mul(
-    float *dst, unsigned int *row, unsigned int *col, float *val, float *arr,
-    unsigned int num_rows, unsigned int val_num
+    float *dst, size_t *row, size_t *col, float *val, float *arr,
+    size_t num_rows, size_t val_num
 )
 {
     // Set all elements to 0
@@ -14,6 +14,7 @@ void mul(
     }
 
     float p = 0;    // tracks product value
+    
     // Loop through row array
     for (int i = 0; i < val_num; i++)
     {

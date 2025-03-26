@@ -10,30 +10,12 @@
 #include <math.h>
 
 SmdvInfo init_mul (size_t num_rows, size_t num_cols, size_t val_num);
-void deinit_mul (SmdvInfo smdv_info);
+void exec_mul (
+    float *dst, size_t *col, float *val, float *arr, size_t *thread_start,
+    size_t num_rows, size_t num_cols, size_t val_num, SmdvInfo& smdv_info
+);
+void deinit_mul (SmdvInfo &smdv_info);
 
-int main()
-{
-    size_t row[] = {0, 0, 1, 3, 4, 5, 5};
-    size_t col[] = {1, 2, 3, 0, 1, 0, 2};
-    float val[] = {1, 2, 5, 1, 3, 4, 2};
-    
-    size_t thread_start[] = {0, 2, 3, 3, 4, 5};
-
-    float arr[] = {2, 6, 1, 3};
-
-    float *res = (float *) malloc(sizeof(float) * 6);
-
-    mul_cuda(res, col, val, arr, thread_start, 6, 4, 7);
-
-    for (int i = 0; i < 6; i++) {
-        printf("%.0lf ", res[i]);
-    }
-
-    printf("\n\n");
-
-    return 0;
-}
 
 __global__
 void mul_kernel (
@@ -65,7 +47,16 @@ void mul_cuda (
 )
 {
     auto smdv_info = init_mul(num_rows, num_cols, val_num);
+    exec_mul(dst, col, val, arr, thread_start, num_rows, num_cols, val_num, smdv_info);
+    deinit_mul(smdv_info);
+}
 
+
+void exec_mul (
+    float *dst, size_t *col, float *val, float *arr, size_t *thread_start,
+    size_t num_rows, size_t num_cols, size_t val_num, SmdvInfo& smdv_info
+)
+{
     // Memcpy
     SAFE_CALL( cudaMemcpy(smdv_info.d_val, val, sizeof(float) * val_num, cudaMemcpyHostToDevice) );
     SAFE_CALL( cudaMemcpy(smdv_info.d_arr, arr, sizeof(float) * num_cols, cudaMemcpyHostToDevice) );
@@ -83,8 +74,6 @@ void mul_cuda (
 
     // Memcpy to Host
     SAFE_CALL( cudaMemcpy(dst, smdv_info.d_dst, sizeof(float) * num_rows, cudaMemcpyDeviceToHost) );
-
-    deinit_mul(smdv_info);
 }
 
 
@@ -105,7 +94,7 @@ SmdvInfo init_mul (size_t num_rows, size_t num_cols, size_t val_num)
 }
 
 
-void deinit_mul (SmdvInfo smdv_info)
+void deinit_mul (SmdvInfo &smdv_info)
 {
     // Free
     SAFE_CALL( cudaFree(smdv_info.d_dst) );
