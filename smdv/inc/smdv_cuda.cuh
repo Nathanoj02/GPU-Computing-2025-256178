@@ -3,7 +3,7 @@
 
 #include "utils.cuh"
 
-struct SmdvInfo {
+struct SmdvInfoOrdered {
     float *d_dst;
     float *d_val;
     float *d_arr;
@@ -12,7 +12,7 @@ struct SmdvInfo {
     struct DeviceInfo dim;
 };
 
-void mul_cuda (
+void mul_cuda_ordered (
     float *dst, size_t *col, float *val, float *arr, size_t *thread_start,
     size_t num_rows, size_t num_cols, size_t val_num
 );

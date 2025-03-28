@@ -4,20 +4,20 @@
 
 #define MAX_LINE 256
 
+#define EPS 1.e-3
+
 void set_array_random(float *arr, size_t size, float max_value);
 
-// TODO -> fix gestione errori con puntatore a Data e ritorno int
-Data read_from_file(char *path)
-{
-    Data data;
 
+int read_from_file_ordered(char *path, DataOrdered &data)
+{
     FILE *fp = fopen(path, "r");
 
     // Check if file is opened
     if (!fp)
     {
         perror("File opening failed!\n");
-        return data;    // TODO fix here
+        return -1;
     }
 
     char line[MAX_LINE];
@@ -33,9 +33,9 @@ Data read_from_file(char *path)
     size_t rows, cols, vals;
     if (sscanf(line, "%ld %ld %ld", &rows, &cols, &vals) != 3)
     {
-        printf("Error: Invalid matrix header format\n");
         fclose(fp);
-        return data;    // TODO fix here
+        printf("Error: Invalid matrix header format\n");
+        return -2;
     }
 
     data.row_num = rows;
@@ -80,7 +80,7 @@ Data read_from_file(char *path)
     // Random array for multiplication
     set_array_random(data.arr, data.col_num, 1);
 
-    return data;
+    return 0;
 }
 
 /**
@@ -98,9 +98,9 @@ void set_array_random(float *arr, size_t size, float max_value)
 /**
  * @details Result should be [8, 15, 0, 2, 18, 10]
  */
-Data test_data()
+DataOrdered test_data_ordered()
 {
-    Data data;
+    DataOrdered data;
 
     data.row_num = 6;
     data.col_num = 4;
@@ -113,9 +113,9 @@ Data test_data()
     data.res = (float *) malloc(sizeof(float) * data.row_num);
     data.thread_start = (size_t *) malloc(sizeof(size_t) * data.row_num);
 
-    size_t row[] = {0, 0, 1, 3, 4, 5, 5};
-    size_t col[] = {1, 2, 3, 0, 1, 0, 2};
-    float val[] = {1, 2, 5, 1, 3, 4, 2};
+    size_t row[] = {0, 0, 3, 1, 4, 5, 5};
+    size_t col[] = {1, 2, 0, 3, 1, 0, 2};
+    float val[] = {1, 2, 1, 5, 3, 4, 2};
     float arr[] = {2, 6, 1, 3};
     size_t thread_start[] = {0, 2, 3, 3, 4, 5};
 
@@ -132,4 +132,111 @@ Data test_data()
     }
 
     return data;
+}
+
+
+// Merges two subarrays of row[], while maintaining col[] and val[]
+void merge(size_t *row, size_t *col, float *val, int left, int mid, int right) {
+    int n1 = mid - left + 1;
+    int n2 = right - mid;
+
+    // Temporary arrays for row, col, and val
+    size_t *leftRow = (size_t *)malloc(n1 * sizeof(size_t));
+    size_t *leftCol = (size_t *)malloc(n1 * sizeof(size_t));
+    float *leftVal = (float *)malloc(n1 * sizeof(float));
+
+    size_t *rightRow = (size_t *)malloc(n2 * sizeof(size_t));
+    size_t *rightCol = (size_t *)malloc(n2 * sizeof(size_t));
+    float *rightVal = (float *)malloc(n2 * sizeof(float));
+
+    if (!leftRow || !rightRow || !leftCol || !rightCol || !leftVal || !rightVal) {
+        printf("Memory allocation failed!\n");
+        exit(1);
+    }
+
+    // Copy data to temporary arrays
+    for (int i = 0; i < n1; i++) {
+        leftRow[i] = row[left + i];
+        leftCol[i] = col[left + i];
+        leftVal[i] = val[left + i];
+    }
+    for (int j = 0; j < n2; j++) {
+        rightRow[j] = row[mid + 1 + j];
+        rightCol[j] = col[mid + 1 + j];
+        rightVal[j] = val[mid + 1 + j];
+    }
+
+    // Merge the temporary arrays back into row[], col[], and val[]
+    int i = 0, j = 0, k = left;
+    while (i < n1 && j < n2) {
+        if (leftRow[i] <= rightRow[j]) {
+            row[k] = leftRow[i];
+            col[k] = leftCol[i];
+            val[k] = leftVal[i];
+            i++;
+        } else {
+            row[k] = rightRow[j];
+            col[k] = rightCol[j];
+            val[k] = rightVal[j];
+            j++;
+        }
+        k++;
+    }
+
+    // Copy the remaining elements of left arrays, if any
+    while (i < n1) {
+        row[k] = leftRow[i];
+        col[k] = leftCol[i];
+        val[k] = leftVal[i];
+        i++;
+        k++;
+    }
+
+    // Copy the remaining elements of right arrays, if any
+    while (j < n2) {
+        row[k] = rightRow[j];
+        col[k] = rightCol[j];
+        val[k] = rightVal[j];
+        j++;
+        k++;
+    }
+
+    // Free allocated memory
+    free(leftRow);
+    free(rightRow);
+    free(leftCol);
+    free(rightCol);
+    free(leftVal);
+    free(rightVal);
+}
+
+// The subarray to be sorted is in the index range [left-right]
+void mergeSort(size_t *row, size_t *col, float *val, int left, int right) {
+    if (left < right) {
+      
+        // Calculate the midpoint
+        int mid = left + (right - left) / 2;
+
+        // Sort first and second halves
+        mergeSort(row, col, val, left, mid);
+        mergeSort(row, col, val, mid + 1, right);
+
+        // Merge the sorted halves
+        merge(row, col, val, left, mid, right);
+    }
+}
+
+
+bool check_data(float *check, float *base, size_t size)
+{
+    for (int i = 0; i < size; i++)
+    {
+        if (abs(check[i] - base[i]) > EPS) {
+            printf("\nRiga %d:\t", i);
+            printf("%lf vs %lf\n\n", check[i], base[i]);
+            return false;
+        }
+    }
+    //
+    return true;
 }
