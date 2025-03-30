@@ -66,7 +66,7 @@ int read_from_file_ordered(char *path, DataOrdered &data)
     
     fclose(fp);
     
-    data.thread_start = (size_t *) malloc(sizeof(size_t) * data.row_num);
+    data.thread_start = (size_t *) malloc(sizeof(size_t) * (data.row_num + 1));
     data.arr = (float *) malloc(sizeof(float) * data.col_num);
     data.res = (float *) malloc(sizeof(float) * data.row_num);
 
@@ -76,6 +76,7 @@ int read_from_file_ordered(char *path, DataOrdered &data)
     {
         data.thread_start[i] = data.thread_start[i - 1] + row_count[i - 1];
     }
+    data.thread_start[data.row_num] = data.val_num;
 
     // Random array for multiplication
     set_array_random(data.arr, data.col_num, 1);
@@ -111,13 +112,13 @@ DataOrdered test_data_ordered()
     data.val = (float *) malloc(sizeof(float) * data.val_num);
     data.arr = (float *) malloc(sizeof(float) * data.col_num);
     data.res = (float *) malloc(sizeof(float) * data.row_num);
-    data.thread_start = (size_t *) malloc(sizeof(size_t) * data.row_num);
+    data.thread_start = (size_t *) malloc(sizeof(size_t) * (data.row_num + 1));
 
     size_t row[] = {0, 0, 3, 1, 4, 5, 5};
     size_t col[] = {1, 2, 0, 3, 1, 0, 2};
     float val[] = {1, 2, 1, 5, 3, 4, 2};
     float arr[] = {2, 6, 1, 3};
-    size_t thread_start[] = {0, 2, 3, 3, 4, 5};
+    size_t thread_start[] = {0, 2, 3, 3, 4, 5, 7};
 
     for (int i = 0; i < data.val_num; i++) {
         data.row[i] = row[i];
@@ -127,7 +128,7 @@ DataOrdered test_data_ordered()
     for (int i = 0; i < data.col_num; i++) {
         data.arr[i] = arr[i];
     }
-    for (int i = 0; i < data.row_num; i++) {
+    for (int i = 0; i < data.row_num + 1; i++) {
         data.thread_start[i] = thread_start[i];
     }
 

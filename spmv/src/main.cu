@@ -1,7 +1,7 @@
 #include "data.cuh"
-#include "smdv.cuh"
+#include "spmv.cuh"
 
-#include "smdv_cuda.cuh"
+#include "spmv_cuda.cuh"
 
 #include <stdio.h>
 #include <sys/time.h>
@@ -36,7 +36,7 @@ int main(int argc, char *argv[])
     // }
 
     // printf("\n--------------------------------------------------------------------\nThread start:\n");
-    // for (int i = 0; i < data.row_num; i++) {
+    // for (int i = 0; i < data.row_num + 1; i++) {
     //     printf("%ld\n", data.thread_start[i]);
     // }
         

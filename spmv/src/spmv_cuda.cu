@@ -1,4 +1,4 @@
-#include "smdv_cuda.cuh"
+#include "spmv_cuda.cuh"
 #include "error.cuh"
 #include "utils.cuh"
 
@@ -33,7 +33,7 @@ void mul_kernel (
 
     float p = 0;
 
-    int thread_end = idx < (num_rows - 1) ? thread_start[idx + 1] : val_num;
+    int thread_end = thread_start[idx + 1];
     for (int i = thread_start[idx]; i < thread_end; i++)
     {
         p += val[i] * arr[col[i]];
@@ -86,7 +86,7 @@ void exec_mul (
     SAFE_CALL( cudaMemcpy(smdv_info.d_val, val, sizeof(float) * val_num, cudaMemcpyHostToDevice) );
     SAFE_CALL( cudaMemcpy(smdv_info.d_arr, arr, sizeof(float) * num_cols, cudaMemcpyHostToDevice) );
     SAFE_CALL( cudaMemcpy(smdv_info.d_col, col, sizeof(size_t) * val_num, cudaMemcpyHostToDevice) );
-    SAFE_CALL( cudaMemcpy(smdv_info.d_thread_start, thread_start, sizeof(size_t) * num_rows, cudaMemcpyHostToDevice) );
+    SAFE_CALL( cudaMemcpy(smdv_info.d_thread_start, thread_start, sizeof(size_t) * (num_rows + 1), cudaMemcpyHostToDevice) );
 
     dim3 dim_grid = dim3(smdv_info.dim.grid.x, smdv_info.dim.grid.y, smdv_info.dim.grid.z);
     dim3 dim_block = dim3(smdv_info.dim.block.x, smdv_info.dim.block.y, smdv_info.dim.block.z);
@@ -111,7 +111,7 @@ SmdvInfoOrdered init_mul (size_t num_rows, size_t num_cols, size_t val_num)
     SAFE_CALL( cudaMalloc(&smdv_info.d_val, sizeof(float) * val_num) );
     SAFE_CALL( cudaMalloc(&smdv_info.d_arr, sizeof(float) * num_cols) );
     SAFE_CALL( cudaMalloc(&smdv_info.d_col, sizeof(size_t) * val_num) );
-    SAFE_CALL( cudaMalloc(&smdv_info.d_thread_start, sizeof(size_t) * num_rows) );
+    SAFE_CALL( cudaMalloc(&smdv_info.d_thread_start, sizeof(size_t) * (num_rows + 1)) );
 
     find_best_grid_linear(smdv_info.dim, num_rows);
 

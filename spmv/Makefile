@@ -5,11 +5,11 @@ FLAGS = -Iinc
 # INCDIRS = -I/usr/local/cuda-12.6/include
 LIBS = -lcudart
 
-OUT = smdv
+OUT = spmv
 
-DEPS = inc/smdv.cuh inc/data.cuh inc/smdv_cuda.cuh inc/error.cuh inc/utils.cuh
+DEPS = inc/spmv.cuh inc/data.cuh inc/spmv_cuda.cuh inc/error.cuh inc/utils.cuh
 
-OBJ = obj/main.o obj/smdv.o obj/data.o obj/smdv_cuda.o obj/error.o obj/utils.o
+OBJ = obj/main.o obj/spmv.o obj/data.o obj/spmv_cuda.o obj/error.o obj/utils.o
 
 all: bin/$(OUT)
 

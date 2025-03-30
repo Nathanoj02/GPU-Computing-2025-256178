@@ -1,4 +1,4 @@
-#include "smdv.cuh"
+#include "spmv.cuh"
 
 #include <stdio.h>
 
