@@ -97,6 +97,8 @@ void exec_mul (
         smdv_info.d_thread_start, num_rows, val_num
     );
 
+    CHECK_CUDA_ERROR
+
     // Memcpy to Host
     SAFE_CALL( cudaMemcpy(dst, smdv_info.d_dst, sizeof(float) * num_rows, cudaMemcpyDeviceToHost) );
 }

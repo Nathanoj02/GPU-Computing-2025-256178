@@ -4,7 +4,7 @@
 
 #define MAX_LINE 256
 
-#define EPS 1.e-3
+#define EPS 1
 
 void set_array_random(float *arr, size_t size, float max_value);
 
