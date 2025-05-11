@@ -1,5 +1,5 @@
 NVCC = nvcc
-FLAGS = -Iinc
+FLAGS = -Iinc -g
 
 # LIBDIRS = -L/usr/local/cuda-12.6/lib64
 # INCDIRS = -I/usr/local/cuda-12.6/include

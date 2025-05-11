@@ -9,7 +9,7 @@
 void set_array_random(float *arr, size_t size, float max_value);
 
 
-int read_from_file_ordered(char *path, DataOrdered &data)
+int read_from_file(char *path, Data &data)
 {
     FILE *fp = fopen(path, "r");
 
@@ -49,8 +49,6 @@ int read_from_file_ordered(char *path, DataOrdered &data)
     data.col = (size_t *) malloc(sizeof(size_t) * data.val_num);
     data.val = (float *) malloc(sizeof(float) * data.val_num);
     
-    size_t *row_count = (size_t *) calloc(data.row_num, sizeof(size_t));    // set to 0
-    
     // Read matrix entries
     size_t row, col;
     float value;
@@ -60,23 +58,13 @@ int read_from_file_ordered(char *path, DataOrdered &data)
         data.col[counter] = col - 1;
         data.val[counter] = value;
         
-        row_count[row - 1] += 1;    // Preparatory for thread_start
         counter++;
     }
     
     fclose(fp);
-    
-    data.thread_start = (size_t *) malloc(sizeof(size_t) * (data.row_num + 1));
+
     data.arr = (float *) malloc(sizeof(float) * data.col_num);
     data.res = (float *) malloc(sizeof(float) * data.row_num);
-
-    // Thread start calculation
-    data.thread_start[0] = 0;
-    for (int i = 1; i < data.row_num; i++)
-    {
-        data.thread_start[i] = data.thread_start[i - 1] + row_count[i - 1];
-    }
-    data.thread_start[data.row_num] = data.val_num;
 
     // Random array for multiplication
     set_array_random(data.arr, data.col_num, 1);
@@ -99,9 +87,9 @@ void set_array_random(float *arr, size_t size, float max_value)
 /**
  * @details Result should be [8, 15, 0, 2, 18, 10]
  */
-DataOrdered test_data_ordered()
+Data test_data()
 {
-    DataOrdered data;
+    Data data;
 
     data.row_num = 6;
     data.col_num = 4;
@@ -112,13 +100,11 @@ DataOrdered test_data_ordered()
     data.val = (float *) malloc(sizeof(float) * data.val_num);
     data.arr = (float *) malloc(sizeof(float) * data.col_num);
     data.res = (float *) malloc(sizeof(float) * data.row_num);
-    data.thread_start = (size_t *) malloc(sizeof(size_t) * (data.row_num + 1));
 
     size_t row[] = {0, 0, 3, 1, 4, 5, 5};
     size_t col[] = {1, 2, 0, 3, 1, 0, 2};
     float val[] = {1, 2, 1, 5, 3, 4, 2};
     float arr[] = {2, 6, 1, 3};
-    size_t thread_start[] = {0, 2, 3, 3, 4, 5, 7};
 
     for (int i = 0; i < data.val_num; i++) {
         data.row[i] = row[i];
@@ -127,9 +113,6 @@ DataOrdered test_data_ordered()
     }
     for (int i = 0; i < data.col_num; i++) {
         data.arr[i] = arr[i];
-    }
-    for (int i = 0; i < data.row_num + 1; i++) {
-        data.thread_start[i] = thread_start[i];
     }
 
     return data;
@@ -238,6 +221,6 @@ bool check_data(float *check, float *base, size_t size)
             return false;
         }
     }
-    //
+    
     return true;
 }

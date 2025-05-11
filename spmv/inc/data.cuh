@@ -3,23 +3,22 @@
 
 #include <stddef.h>
 
-typedef struct DataOrdered
+typedef struct Data
 {
     size_t *row;
     size_t *col;
     float *val;
     float *arr;
     float *res;
-    size_t *thread_start;
     size_t row_num;
     size_t col_num;
     size_t val_num;
-} DataOrdered;
+} Data;
 
 
-DataOrdered test_data_ordered();
+Data test_data();
 
-int read_from_file_ordered(char *path, DataOrdered &data);
+int read_from_file(char *path, Data &data);
 
 bool check_data(float *check, float *base, size_t size);
 

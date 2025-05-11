@@ -8,4 +8,14 @@ void mul(
     size_t num_rows, size_t val_num
 );
 
+void mul_sorted(
+    float *dst, size_t *row, size_t *col, float *val, float *arr,
+    size_t num_rows, size_t val_num
+);
+
+void mul_tiled(
+    float *dst, size_t *row, size_t *col, float *val, float *arr,
+    size_t num_rows, size_t val_num
+);
+
 #endif
