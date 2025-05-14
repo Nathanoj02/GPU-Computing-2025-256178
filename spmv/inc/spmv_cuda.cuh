@@ -13,7 +13,7 @@ struct SmdvInfo {
 };
 
 
-void mul_cuda (
+float mul_cuda (
     float *dst, size_t *row, size_t *col, float *val, float *arr,
     size_t num_rows, size_t num_cols, size_t val_num
 );

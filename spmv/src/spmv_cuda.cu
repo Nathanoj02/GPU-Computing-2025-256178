@@ -12,7 +12,7 @@
 #include <sys/time.h>
 
 SmdvInfo init_mul (size_t num_rows, size_t num_cols, size_t val_num);
-void exec_mul (
+float exec_mul (
     float *dst, size_t *row, size_t *col, float *val, float *arr,
     size_t num_rows, size_t num_cols, size_t val_num, SmdvInfo& smdv_info
 );
@@ -32,23 +32,26 @@ void mul_kernel (
         return;
 
     float value = val[idx] * arr[col[idx]];
+    int row_idx = row[idx];
     
-    atomicAdd(&dst[row[idx]], value);
+    atomicAdd(&dst[row_idx], value);
 }
 
 
-void mul_cuda (
+float mul_cuda (
     float *dst, size_t *row, size_t *col, float *val, float *arr,
     size_t num_rows, size_t num_cols, size_t val_num
 )
 {
     auto smdv_info = init_mul(num_rows, num_cols, val_num);
-    exec_mul(dst, row, col, val, arr, num_rows, num_cols, val_num, smdv_info);
+    float time_spent = exec_mul(dst, row, col, val, arr, num_rows, num_cols, val_num, smdv_info);
     deinit_mul(smdv_info);
+
+    return time_spent;
 }
 
 
-void exec_mul (
+float exec_mul (
     float *dst, size_t *row, size_t *col, float *val, float *arr,
     size_t num_rows, size_t num_cols, size_t val_num, SmdvInfo& smdv_info
 ) 
@@ -61,7 +64,13 @@ void exec_mul (
 
     dim3 dim_grid = dim3(smdv_info.dim.grid.x, smdv_info.dim.grid.y, smdv_info.dim.grid.z);
     dim3 dim_block = dim3(smdv_info.dim.block.x, smdv_info.dim.block.y, smdv_info.dim.block.z);
-    
+
+    cudaEvent_t start, stop;
+    cudaEventCreate(&start);
+    cudaEventCreate(&stop);
+
+    cudaEventRecord(start);
+
     // Kernel invocation
     mul_kernel <<< dim_grid, dim_block >>> (
         smdv_info.d_dst, smdv_info.d_row, smdv_info.d_col, smdv_info.d_val, smdv_info.d_arr, val_num
@@ -69,8 +78,19 @@ void exec_mul (
 
     CHECK_CUDA_ERROR
 
+    cudaEventRecord(stop);
+    cudaEventSynchronize(stop);
+    float milliseconds = 0;
+
+    cudaEventElapsedTime(&milliseconds, start, stop);
+
+    cudaEventDestroy(start);
+    cudaEventDestroy(stop);
+
     // Memcpy to Host
     SAFE_CALL( cudaMemcpy(dst, smdv_info.d_dst, sizeof(float) * num_rows, cudaMemcpyDeviceToHost) );
+
+    return milliseconds * 1000; // Return in nanoseconds to match cpu algorithms
 }
 
 

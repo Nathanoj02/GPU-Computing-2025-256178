@@ -28,9 +28,6 @@ void mul_sorted(
     size_t num_rows, size_t val_num
 )
 {
-    // Sort by row
-    mergeSort(row, col, val, 0, val_num - 1);
-
     // Set all elements to 0
     for (int i = 0; i < num_rows; i++)
     {
@@ -50,15 +47,13 @@ void mul_tiled(
     size_t num_rows, size_t val_num
 )
 {
-    mergeSort(row, col, val, 0, val_num - 1);
-
     // Set all elements to 0
     for (int i = 0; i < num_rows; i++)
     {
         dst[i] = 0;
     }
 
-    size_t TILE = 128*1024;
+    size_t TILE = 64*256;
     for (size_t t = 0; t < val_num; t += TILE) {
         size_t t_end = std::min(val_num, t + TILE);
 
