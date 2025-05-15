@@ -1,4 +1,4 @@
-#include "data.cuh"
+#include "data_cuda.cuh"
 
 #include <malloc.h>
 
@@ -6,10 +6,10 @@
 
 #define EPS 1
 
-void set_array_random(float *arr, size_t size, float max_value);
+void set_array_random(float *arr, int size, float max_value);
 
 
-int read_from_file(char *path, Data &data)
+int read_from_file(char *path, DataCuda *data)
 {
     FILE *fp = fopen(path, "r");
 
@@ -30,44 +30,44 @@ int read_from_file(char *path, Data &data)
     }
 
     // Get #rows, #cols, #vals
-    size_t rows, cols, vals;
-    if (sscanf(line, "%ld %ld %ld", &rows, &cols, &vals) != 3)
+    int rows, cols, vals;
+    if (sscanf(line, "%d %d %d", &rows, &cols, &vals) != 3)
     {
         fclose(fp);
         printf("Error: Invalid matrix header format\n");
         return -2;
     }
 
-    data.row_num = rows;
-    data.col_num = cols;
-    data.val_num = vals;
+    data->row_num = rows;
+    data->col_num = cols;
+    data->val_num = vals;
 
     int counter = 0;
 
     // Alloc memory
-    data.row = (size_t *) malloc(sizeof(size_t) * data.val_num);
-    data.col = (size_t *) malloc(sizeof(size_t) * data.val_num);
-    data.val = (float *) malloc(sizeof(float) * data.val_num);
+    data->row = (int *) malloc(sizeof(int) * data->val_num);
+    data->col = (int *) malloc(sizeof(int) * data->val_num);
+    data->val = (float *) malloc(sizeof(float) * data->val_num);
     
     // Read matrix entries
-    size_t row, col;
+    int row, col;
     float value;
-    while (fscanf(fp, "%ld %ld %f", &row, &col, &value) == 3)
+    while (fscanf(fp, "%d %d %f", &row, &col, &value) == 3)
     {
-        data.row[counter] = row - 1;    // In data, indexing starts at 1
-        data.col[counter] = col - 1;
-        data.val[counter] = value;
+        data->row[counter] = row - 1;    // In data, indexing starts at 1
+        data->col[counter] = col - 1;
+        data->val[counter] = value;
         
         counter++;
     }
     
     fclose(fp);
 
-    data.arr = (float *) malloc(sizeof(float) * data.col_num);
-    data.res = (float *) malloc(sizeof(float) * data.row_num);
+    data->arr = (float *) malloc(sizeof(float) * data->col_num);
+    data->res = (float *) malloc(sizeof(float) * data->row_num);
 
     // Random array for multiplication
-    set_array_random(data.arr, data.col_num, 1);
+    set_array_random(data->arr, data->col_num, 1);
 
     return 0;
 }
@@ -75,7 +75,7 @@ int read_from_file(char *path, Data &data)
 /**
  * @brief Fills array with random values in [0, max_value]
  */
-void set_array_random(float *arr, size_t size, float max_value)
+void set_array_random(float *arr, int size, float max_value)
 {
     srand((unsigned) time(NULL));
 
@@ -87,22 +87,22 @@ void set_array_random(float *arr, size_t size, float max_value)
 /**
  * @details Result should be [8, 15, 0, 2, 18, 10]
  */
-Data test_data()
+DataCuda test_data()
 {
-    Data data;
+    DataCuda data;
 
     data.row_num = 6;
     data.col_num = 4;
     data.val_num = 7;
 
-    data.row = (size_t *) malloc(sizeof(size_t) * data.val_num);
-    data.col = (size_t *) malloc(sizeof(size_t) * data.val_num);
+    data.row = (int *) malloc(sizeof(int) * data.val_num);
+    data.col = (int *) malloc(sizeof(int) * data.val_num);
     data.val = (float *) malloc(sizeof(float) * data.val_num);
     data.arr = (float *) malloc(sizeof(float) * data.col_num);
-    data.res = (float *) malloc(sizeof(float) * data.row_num);
+    data.res = (float *) calloc(data.row_num, sizeof(float));
 
-    size_t row[] = {0, 0, 3, 1, 4, 5, 5};
-    size_t col[] = {1, 2, 0, 3, 1, 0, 2};
+    int row[] = {0, 0, 3, 1, 4, 5, 5};
+    int col[] = {1, 2, 0, 3, 1, 0, 2};
     float val[] = {1, 2, 1, 5, 3, 4, 2};
     float arr[] = {2, 6, 1, 3};
 
@@ -120,17 +120,17 @@ Data test_data()
 
 
 // Merges two subarrays of row[], while maintaining col[] and val[]
-void merge(size_t *row, size_t *col, float *val, int left, int mid, int right) {
+void merge(int *row, int *col, float *val, int left, int mid, int right) {
     int n1 = mid - left + 1;
     int n2 = right - mid;
 
     // Temporary arrays for row, col, and val
-    size_t *leftRow = (size_t *)malloc(n1 * sizeof(size_t));
-    size_t *leftCol = (size_t *)malloc(n1 * sizeof(size_t));
+    int *leftRow = (int *)malloc(n1 * sizeof(int));
+    int *leftCol = (int *)malloc(n1 * sizeof(int));
     float *leftVal = (float *)malloc(n1 * sizeof(float));
 
-    size_t *rightRow = (size_t *)malloc(n2 * sizeof(size_t));
-    size_t *rightCol = (size_t *)malloc(n2 * sizeof(size_t));
+    int *rightRow = (int *)malloc(n2 * sizeof(int));
+    int *rightCol = (int *)malloc(n2 * sizeof(int));
     float *rightVal = (float *)malloc(n2 * sizeof(float));
 
     if (!leftRow || !rightRow || !leftCol || !rightCol || !leftVal || !rightVal) {
@@ -195,7 +195,7 @@ void merge(size_t *row, size_t *col, float *val, int left, int mid, int right) {
 }
 
 // The subarray to be sorted is in the index range [left-right]
-void mergeSort(size_t *row, size_t *col, float *val, int left, int right) {
+void mergeSort(int *row, int *col, float *val, int left, int right) {
     if (left < right) {
       
         // Calculate the midpoint
@@ -211,7 +211,7 @@ void mergeSort(size_t *row, size_t *col, float *val, int left, int right) {
 }
 
 
-bool check_data(float *check, float *base, size_t size)
+bool check_data(float *check, float *base, int size)
 {
     for (int i = 0; i < size; i++)
     {

@@ -7,15 +7,15 @@ struct SmdvInfo {
     float *d_dst;
     float *d_val;
     float *d_arr;
-    size_t *d_row;
-    size_t *d_col;
+    int *d_row;
+    int *d_col;
     struct DeviceInfo dim;
 };
 
 
 float mul_cuda (
-    float *dst, size_t *row, size_t *col, float *val, float *arr,
-    size_t num_rows, size_t num_cols, size_t val_num
+    float *dst, int *row, int *col, float *val, float *arr,
+    int num_rows, int num_cols, int val_num
 );
 
 #endif
