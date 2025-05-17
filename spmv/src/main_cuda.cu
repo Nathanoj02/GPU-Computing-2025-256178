@@ -74,8 +74,8 @@ void printTimes(double times[]) {
     printf("\nGeometric mean time: %lf usec\n", geo_mean);
     printf("\t\t%lf s\n", geo_mean / 1.e6);
     
-    printf("\nArithmetic mean time: %lf usec\n", ar_mean);
-    printf("\t\t%lf s\n", ar_mean / 1.e6);
+    // printf("\nArithmetic mean time: %lf usec\n", ar_mean);
+    // printf("\t\t%lf s\n", ar_mean / 1.e6);
 
     printf("\nStd: %lf usec\n", std_time);
 }

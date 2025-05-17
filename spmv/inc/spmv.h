@@ -4,8 +4,11 @@
 #include <stddef.h>
 
 void mul(
-    float *dst, int *row, int *col, float *val, float *arr,
-    int num_rows, int val_num
+    float *dst, int *row, int *col, float *val, float *arr, int val_num
+);
+
+void mul_omp(
+    float *dst, int *row, int *col, float *val, float *arr, int val_num, int row_num
 );
 
 #endif

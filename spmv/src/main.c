@@ -44,6 +44,13 @@ int main(int argc, char *argv[])
             }
             alg = 1;
         }
+        else if (strcmp(arg, "--alg2") == 0) {
+            if (alg != -1) {
+                printf("Error: --alg2 cannot be combined with other CPU algorithm options.\n");
+                return 1;
+            }
+            alg = 2;
+        }
         else if (!found_file) {
             filename = arg;
             found_file = true;
@@ -74,10 +81,10 @@ int main(int argc, char *argv[])
         switch (alg)
         {
             case 0 :
-                mul(data.res, data.row, data.col, data.val, data.arr, data.row_num, data.val_num);
+                mul(data.res, data.row, data.col, data.val, data.arr, data.val_num);
                 break;
             case 1 :
-                mul(data.res, data.row, data.col, data.val, data.arr, data.row_num, data.val_num);
+                mul(data.res, data.row, data.col, data.val, data.arr, data.val_num);
                 break;
             default:
                 break;
@@ -88,7 +95,7 @@ int main(int argc, char *argv[])
 
         double times[RUNS];
         
-        if (alg >= 1) {
+        if (alg == 1) {
             mergeSort(data.row, data.col, data.val, 0, data.val_num - 1);
         }
 
@@ -103,9 +110,13 @@ int main(int argc, char *argv[])
                 case 0 :    // cpu naive
                 case 1:     // cpu sorted
                     gettimeofday(&t1, (struct timezone *) 0);
-                    mul(data.res, data.row, data.col, data.val, data.arr, data.row_num, data.val_num);
+                    mul(data.res, data.row, data.col, data.val, data.arr, data.val_num);
                     gettimeofday(&t2, (struct timezone *) 0);
                     break;
+                case 2: // openMP
+                    gettimeofday(&t1, (struct timezone *) 0);
+                    mul_omp(data.res, data.row, data.col, data.val, data.arr, data.val_num, data.row_num);
+                    gettimeofday(&t2, (struct timezone *) 0);
                 default :
                     break;
             }
@@ -142,8 +153,8 @@ void printTimes(double times[]) {
     printf("\nGeometric mean time: %lf usec\n", geo_mean);
     printf("\t\t%lf s\n", geo_mean / 1.e6);
     
-    printf("\nArithmetic mean time: %lf usec\n", ar_mean);
-    printf("\t\t%lf s\n", ar_mean / 1.e6);
+    // printf("\nArithmetic mean time: %lf usec\n", ar_mean);
+    // printf("\t\t%lf s\n", ar_mean / 1.e6);
 
     printf("\nStd: %lf usec\n", std_time);
 }
