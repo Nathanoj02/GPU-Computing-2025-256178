@@ -33,4 +33,4 @@ bin/$(OUT_CUDA): $(OBJ_CUDA)
 .PHONY : clean
 
 clean :
-	rm -rf bin/$(OUT) obj/*
+	rm -rf bin/$(OUT) bin/$(OUT_CUDA) obj/*
