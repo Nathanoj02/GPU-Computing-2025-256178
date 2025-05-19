@@ -118,7 +118,7 @@ int main(int argc, char *argv[])
                     mul_omp(data.res, data.row, data.col, data.val, data.arr, data.val_num, data.row_num);
                     gettimeofday(&t2, (struct timezone *) 0);
                 default :
-                    break;
+                    return -1;
             }
         
             if (i >= 0) {

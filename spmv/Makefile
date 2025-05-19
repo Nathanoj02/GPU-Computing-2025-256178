@@ -4,8 +4,6 @@ FLAGS_CUDA = -Iinc
 GCC = gcc
 FLAGS = -Iinc -g -Wall -fopenmp -O3
 
-# LIBDIRS = -L/usr/local/cuda-12.6/lib64
-# INCDIRS = -I/usr/local/cuda-12.6/include
 LIBS = -lm
 LIBS_CUDA = -lcudart
 
