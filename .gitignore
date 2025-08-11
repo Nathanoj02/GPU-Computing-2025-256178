@@ -2,3 +2,12 @@
 .vscode
 *mtx
 .venv
+
+**/dataset/*
+!**/dataset/.gitkeep
+
+**/bin/*
+!**/bin/.gitkeep
+
+**/obj/*
+!**/obj/.gitkeep
