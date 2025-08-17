@@ -1,6 +1,7 @@
 import numpy as np
 import sys
 import os
+import time
 
 def generate_data(dimensions, num_points):
     """
@@ -17,7 +18,14 @@ def generate_data(dimensions, num_points):
     # Save the data to a file in dataset folder
     script_dir = os.path.dirname(os.path.abspath(__file__))
     filename = os.path.join(script_dir, '..', 'dataset', f'points_{dimensions}d.txt')
-    np.savetxt(filename, data)
+
+    # Write dimensions and number of points to the first line
+    with open(filename, 'w') as f:
+        f.write(f"{dimensions} {num_points}\n")
+        
+        # Save the data points
+        np.savetxt(f, data)
+    
 
 
 if __name__ == '__main__':
@@ -30,4 +38,8 @@ if __name__ == '__main__':
     num_points = int(sys.argv[2])
 
     # Generate the data
+    start_time = time.time()
     generate_data(dimensions, num_points)
+    end_time = time.time()
+
+    print(f"Done! In {end_time - start_time} seconds")
