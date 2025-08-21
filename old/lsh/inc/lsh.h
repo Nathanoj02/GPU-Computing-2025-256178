@@ -6,6 +6,10 @@
 
 #define SEED 0
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 // Structure for a point in n-dimensional space
 typedef struct {
     double *coords;
@@ -49,5 +53,9 @@ int lsh_nearest_neighbors(LSH *lsh, Point *query_point, double max_distance, int
 void cleanup_lsh(LSH *lsh);
 
 double calculate_distance(Point *p1, Point *p2, int dimensions);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif // __LSH_H__

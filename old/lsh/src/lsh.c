@@ -13,7 +13,7 @@ void init_hash_table(HashTable *table, int k, size_t num_points) {
     table->num_buckets = num_buckets;
     table->buckets = malloc(num_buckets * sizeof(Bucket));
     
-    int expected_capacity = num_points / num_buckets + 10;
+    int expected_capacity = num_points / num_buckets * 1.25; // 25% extra space
     for (int i = 0; i < num_buckets; i++) {
         init_bucket(&table->buckets[i], expected_capacity);
     }
@@ -26,7 +26,7 @@ static inline void add_to_bucket(HashTable *table, int hash_value, int point_ind
     // Resize if needed (rare)
     if (bucket->count >= bucket->capacity) {
         bucket->capacity *= 2;
-        bucket->point_indices = (int*)realloc(bucket->point_indices, 
+        bucket->point_indices = (int *) realloc(bucket->point_indices, 
                                             bucket->capacity * sizeof(int));
     }
     
@@ -35,20 +35,11 @@ static inline void add_to_bucket(HashTable *table, int hash_value, int point_ind
     bucket->count++;
 }
 
-// Get points from specific bucket
-static inline int* get_from_bucket(HashTable *table, int hash_value, int *count) {
-    Bucket *bucket = &table->buckets[hash_value];
-    *count = bucket->count;
-    return bucket->point_indices;
-}
-
 // Generate L*k hyperplanes
 void generate_hyperplanes(LSH *lsh) {
     srand(SEED);   // Fixed seed for reproducible results
 
-    int total_hp = lsh->L * lsh->k;
-
-    for (int i = 0; i < total_hp; i++) {
+    for (int i = 0; i < lsh->num_hyperplanes; i++) {
         double norm = 0.0;
         
         // Generate random normal vector
@@ -217,8 +208,8 @@ void cleanup_lsh(LSH *lsh) {
         for (int b = 0; b < lsh->hash_tables[h].num_buckets; b++) {
             free(lsh->hash_tables[h].buckets[b].point_indices);
         }
-    free(lsh->hash_tables[h].buckets);
-}
+        free(lsh->hash_tables[h].buckets);
+    }
     
     // Free hyperplanes
     for (int i = 0; i < lsh->num_hyperplanes; i++) {

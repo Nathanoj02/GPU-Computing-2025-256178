@@ -6,6 +6,14 @@
 
 #include "lsh.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 Point* read_data(size_t *num_points, const char *filename);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif // __DATA_H__
