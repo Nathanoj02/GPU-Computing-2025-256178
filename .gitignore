@@ -6,8 +6,7 @@
 **/dataset/*
 !**/dataset/.gitkeep
 
-**/bin/*
-!**/bin/.gitkeep
+bin/
+obj/
 
-**/obj/*
-!**/obj/.gitkeep
+build
