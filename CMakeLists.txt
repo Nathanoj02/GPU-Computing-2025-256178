@@ -11,7 +11,14 @@ message(STATUS "OpenCV include dirs: ${OpenCV_INCLUDE_DIRS}")
 message(STATUS "OpenCV libraries: ${OpenCV_LIBS}")
 
 include_directories(${OpenCV_INCLUDE_DIRS})
+include_directories(inc)
 
-add_executable(GPUComputing src/main.cpp)
+# Define source files variable
+set(SOURCES
+    src/main.cpp
+    src/cluster.c
+)
 
-target_link_libraries(GPUComputing ${OpenCV_LIBS})
+add_executable(GPUComputing ${SOURCES})
+
+target_link_libraries(GPUComputing ${OpenCV_LIBS} m)
