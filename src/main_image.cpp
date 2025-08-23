@@ -2,29 +2,10 @@
 
 extern "C" {
     #include "cluster.h"
+    #include "cluster_acc.h"
 }
 
 int main() {
-    // TODO Fix with relative path independent from working directory
-    // cv::VideoCapture cap("../dataset/walking.mp4");
-    // if (!cap.isOpened()) {
-    //     return -1;
-    // }
-
-    // cv::Mat frame;
-
-    // while (true) {
-    //     cap >> frame;
-    //     if (frame.empty()) {
-    //         break;
-    //     }
-    //     cv::imshow("Video Frame", frame);
-
-    //     if (cv::waitKey(30) >= 0) {
-    //         break;
-    //     }
-    // }
-
     // Load image
     cv::Mat img = cv::imread("../dataset/frame0.png");
     if (img.empty()) {
@@ -39,7 +20,17 @@ int main() {
     float stab_error = 1.0f; // Convergence threshold
     int max_iterations = 100;
     cv::Mat clustered_img(img_height, img_width, img.type());
-    k_means(clustered_img.data, img.data, img_height, img_width, k, dimensions, stab_error, max_iterations);
+
+    // Time the execution 10 times and mean the result
+    double duration = 0.0;
+    for (int i = 0; i < 10; i++) {
+        double start_time = static_cast<double>(cv::getTickCount());
+        k_means(clustered_img.data, img.data, img_height, img_width, k, dimensions, stab_error, max_iterations);
+        double end_time = static_cast<double>(cv::getTickCount());
+
+        duration += (end_time - start_time) / cv::getTickFrequency();
+    }
+    std::cout << "K-means clustering mean time: " << duration / 10 << " seconds." << std::endl;
 
     // Display results resized to fit on screen
     cv::resize(img, img, cv::Size(), 0.5, 0.5);

@@ -3,10 +3,10 @@
 # =============================================================================
 
 # Compiler and flags
-CXX = g++
-CC = gcc
-CXXFLAGS = -std=c++17 -Wall -Wextra -O2 -g
-CFLAGS = -std=c99 -Wall -Wextra -O2 -g
+CXX = nvc++
+CC = nvc
+CXXFLAGS = -std=c++17 -Wall -O2 -g -acc -gpu=cc75 --diag_suppress partial_override
+CFLAGS = -std=c99 -Wall -O2 -g -acc -gpu=cc75
 
 # OpenCV flags
 OPENCV_CFLAGS = $(shell pkg-config --cflags opencv4)
@@ -35,30 +35,32 @@ all: $(EXECUTABLES)
 
 # Create directories if they don't exist
 $(BINDIR):
-	mkdir -p $(BINDIR)
+	@mkdir -p $(BINDIR)
 
 $(OBJDIR):
-	mkdir -p $(OBJDIR)
+	@mkdir -p $(OBJDIR)
 
 # Rule to compile .cpp to .o (object files)
 $(OBJDIR)/%.o: $(SRCDIR)/%.cpp | $(OBJDIR)
 	@echo "Compiling C++: $<..."
-	$(CXX) $(CXXFLAGS) $(OPENCV_CFLAGS) -I $(INCDIR) -c $< -o $@
+	@$(CXX) $(CXXFLAGS) $(OPENCV_CFLAGS) -I $(INCDIR) -c $< -o $@
 
 # Rule to compile .c to .o (object files)
 $(OBJDIR)/%.o: $(SRCDIR)/%.c | $(OBJDIR)
 	@echo "Compiling C: $<..."
-	$(CC) $(CFLAGS) -I $(INCDIR) -c $< -o $@
+	@$(CC) $(CFLAGS) -I $(INCDIR) -c $< -o $@
 
 # Rule to link object files to executables
 $(BINDIR)/%: $(OBJDIR)/%.o $(C_OBJECTS) | $(BINDIR)
 	@echo "Linking $@..."
-	$(CXX) $(CXXFLAGS) $^ -o $@ $(OPENCV_LIBS) -lm
+	@$(CXX) $(CXXFLAGS) $^ -o $@ $(OPENCV_LIBS) -lm
+	@echo "✓ Build complete: $@"
 
 # Clean generated files
 clean:
 	@echo "Cleaning..."
-	rm -rf $(BINDIR) $(OBJDIR)
+	@rm -rf $(BINDIR) $(OBJDIR)
+	@echo "✓ Clean complete"
 
 # Clean and rebuild
 rebuild: clean all

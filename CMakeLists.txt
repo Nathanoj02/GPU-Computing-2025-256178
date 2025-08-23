@@ -13,11 +13,13 @@ message(STATUS "OpenCV libraries: ${OpenCV_LIBS}")
 include_directories(${OpenCV_INCLUDE_DIRS})
 include_directories(inc)
 
-# Define source files variable
-set(SOURCES
-    src/main.cpp
-    src/cluster.c
+# Automatically find all source files in src directory
+file(GLOB SOURCES 
+    "src/*.cpp"
+    "src/*.c"
 )
+
+message(STATUS "Found source files: ${SOURCES}")
 
 add_executable(GPUComputing ${SOURCES})
 

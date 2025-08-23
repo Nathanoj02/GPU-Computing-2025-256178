@@ -1,4 +1,5 @@
 #include "cluster.h"
+#include "distances.h"
 
 void k_means (
     uint8_t* dst, uint8_t* img,
@@ -47,14 +48,11 @@ void k_means (
 
                 for (unsigned int p = 0; p < k; p++)
                 {
-                    float distance = 0;
-
-                    // Calculate Euclidian distance
-                    for (unsigned int d = 0; d < dimensions; d++) {
-                        float diff = img[i * img_width * dimensions + j * dimensions + d] - prototypes[p * dimensions + d];
-                        distance += diff * diff;
-                    }
-                    distance = sqrt(distance);
+                    float distance = squared_euclidean_distance(
+                        &img[i * img_width * dimensions + j * dimensions], 
+                        &prototypes[p * dimensions], 
+                        dimensions
+                    );
 
                     if (distance < min_distance) {
                         min_distance = distance;
