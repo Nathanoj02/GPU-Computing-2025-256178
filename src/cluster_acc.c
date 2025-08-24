@@ -5,7 +5,8 @@ void k_means_acc (
     uint8_t* dst, uint8_t* img,
     size_t img_height, size_t img_width,
     unsigned int k, unsigned int dimensions,
-    float stab_error, int max_iterations) 
+    float stab_error, int max_iterations,
+    float minkowski_parameter)
 {
     srand(0);   // Seed for reproducibility
 
@@ -54,10 +55,11 @@ void k_means_acc (
                     // Find nearest prototype
                     for (unsigned int p = 0; p < k; p++)
                     {
-                        float distance = squared_euclidean_distance(
+                        float distance = manhattan_distance(
                             &img[img_offset], 
                             &prototypes[p * dimensions], 
-                            dimensions
+                            dimensions,
+                            minkowski_parameter
                         );
 
                         if (distance < min_distance) {
@@ -130,7 +132,8 @@ void k_means_acc (
                 float distance_squared = squared_euclidean_distance(
                     &prototypes[i * dimensions],
                     &old_prototypes[i * dimensions],
-                    dimensions
+                    dimensions,
+                    0.0f
                 );
 
                 if (distance_squared > max_diff_squared) {
@@ -171,7 +174,8 @@ void k_means_acc_old (
     uint8_t* dst, uint8_t* img,
     size_t img_height, size_t img_width,
     unsigned int k, unsigned int dimensions,
-    float stab_error, int max_iterations) 
+    float stab_error, int max_iterations,
+    float minkowski_parameter)
 {
     srand(0);   // Seed for reproducibility
 
@@ -228,10 +232,11 @@ void k_means_acc_old (
 
                     for (unsigned int p = 0; p < k; p++)
                     {
-                        float distance = squared_euclidean_distance(
+                        float distance = manhattan_distance(
                             &img[i * img_width * dimensions + j * dimensions], 
                             &prototypes[p * dimensions], 
-                            dimensions
+                            dimensions,
+                            minkowski_parameter
                         );
 
                         if (distance < min_distance) {
@@ -282,13 +287,12 @@ void k_means_acc_old (
 
             for (unsigned int i = 0; i < k; i++)
             {
-                float distance_squared = 0;
-
-                for (unsigned int d = 0; d < dimensions; d++) 
-                {
-                    float diff = prototypes[i * dimensions + d] - old_prototypes[i * dimensions + d];
-                    distance_squared += diff * diff;
-                }
+                float distance_squared = squared_euclidean_distance(
+                    &prototypes[i * dimensions],
+                    &old_prototypes[i * dimensions],
+                    dimensions,
+                    0.0f
+                );
 
                 if (distance_squared > stab_error)
                 {

@@ -17,9 +17,10 @@
  * @param a First data point
  * @param b Second data point
  * @param dimensions Number of dimensions
+ * @param dummy Unused parameter to match function signature
  * @return Squared Euclidean distance
  */
-static inline float squared_euclidean_distance(const uint8_t* a, const uint8_t* b, unsigned int dimensions) {
+static inline float squared_euclidean_distance(const uint8_t* a, const uint8_t* b, unsigned int dimensions, float dummy) {
     float sum = 0.0f;
     for (unsigned int i = 0; i < dimensions; i++) {
         float diff = (float)a[i] - (float)b[i];
@@ -29,13 +30,26 @@ static inline float squared_euclidean_distance(const uint8_t* a, const uint8_t* 
 }
 
 /**
+ * Euclidean Distance
+ * @param a First data point
+ * @param b Second data point
+ * @param dimensions Number of dimensions
+ * @param dummy Unused parameter to match function signature
+ * @return Euclidean distance
+ */
+static inline float euclidean_distance(const uint8_t* a, const uint8_t* b, unsigned int dimensions, float dummy) {
+    return sqrt(squared_euclidean_distance(a, b, dimensions, dummy));
+}
+
+/**
  * Manhattan Distance
  * @param a First data point
  * @param b Second data point
  * @param dimensions Number of dimensions
+ * @param dummy Unused parameter to match function signature
  * @return Manhattan distance
  */
-static inline float manhattan_distance(const uint8_t* a, const uint8_t* b, unsigned int dimensions) {
+static inline float manhattan_distance(const uint8_t* a, const uint8_t* b, unsigned int dimensions, float dummy) {
     float sum = 0.0f;
     for (unsigned int i = 0; i < dimensions; i++) {
         float diff = (float)a[i] - (float)b[i];
@@ -49,9 +63,10 @@ static inline float manhattan_distance(const uint8_t* a, const uint8_t* b, unsig
  * @param a First data point
  * @param b Second data point
  * @param dimensions Number of dimensions
+ * @param dummy Unused parameter to match function signature
  * @return Chebyshev distance
  */
-static inline float chebyshev_distance(const uint8_t* a, const uint8_t* b, unsigned int dimensions) {
+static inline float chebyshev_distance(const uint8_t* a, const uint8_t* b, unsigned int dimensions, float dummy) {
     float max_diff = 0.0f;
     for (unsigned int i = 0; i < dimensions; i++) {
         float diff = fabs((float)a[i] - (float)b[i]);
@@ -84,9 +99,10 @@ static inline float minkowski_distance(const uint8_t* a, const uint8_t* b, unsig
  * @param a First data point
  * @param b Second data point
  * @param dimensions Number of dimensions
+ * @param dummy Unused parameter to match function signature
  * @return Cosine distance
  */
-static inline float cosine_distance(const uint8_t* a, const uint8_t* b, unsigned int dimensions) {
+static inline float cosine_distance(const uint8_t* a, const uint8_t* b, unsigned int dimensions, float dummy) {
     float dot_product = 0.0f;
     float norm_a = 0.0f;
     float norm_b = 0.0f;

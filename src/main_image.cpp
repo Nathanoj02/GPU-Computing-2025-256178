@@ -3,11 +3,22 @@
 extern "C" {
     #include "cluster.h"
     #include "cluster_acc.h"
+    #include "distances.h"
+    #include "metrics.h"
 }
 
-int main() {
+int main(int argc, char** argv) {
+    // Get k and image name from command line arguments
+    if (argc < 3) {
+        std::cerr << "Usage: " << argv[0] << " <k> <image_path>" << std::endl;
+        return -1;
+    }
+
+    unsigned int k = std::stoi(argv[1]);
+    std::string image_path = argv[2];
+
     // Load image
-    cv::Mat img = cv::imread("../dataset/frame0.png");
+    cv::Mat img = cv::imread(image_path);
     if (img.empty()) {
         return -1;
     }
@@ -16,29 +27,38 @@ int main() {
     size_t img_width = img.cols;
     unsigned int dimensions = img.channels(); // Number of channels (e.g., 3 for RGB)
 
-    unsigned int k = 3;
+    cv::Mat clustered_img(img_height, img_width, img.type());
     float stab_error = 1.0f; // Convergence threshold
     int max_iterations = 100;
-    cv::Mat clustered_img(img_height, img_width, img.type());
+
+    // Array with all distances functions
+    float (*distance_functions[])(const uint8_t*, const uint8_t*, unsigned int, float) = {
+        squared_euclidean_distance,
+        manhattan_distance,
+        chebyshev_distance,
+        minkowski_distance,
+        cosine_distance
+    };
 
     // Time the execution 10 times and mean the result
-    double duration = 0.0;
-    for (int i = 0; i < 10; i++) {
-        double start_time = static_cast<double>(cv::getTickCount());
-        k_means_acc(clustered_img.data, img.data, img_height, img_width, k, dimensions, stab_error, max_iterations);
-        double end_time = static_cast<double>(cv::getTickCount());
+    for (int func_idx = 0; func_idx < 5; func_idx++)
+    {
+        double duration = 0.0;
 
-        duration += (end_time - start_time) / cv::getTickFrequency();
+        for (int i = 0; i < 10; i++)
+        {
+            double start_time = static_cast<double>(cv::getTickCount());
+            k_means(clustered_img.data, img.data, img_height, img_width, k, dimensions, stab_error, max_iterations, distance_functions[func_idx], 1.5f);
+            double end_time = static_cast<double>(cv::getTickCount());
+
+            duration += (end_time - start_time) / cv::getTickFrequency();
+        }
+
+        std::cout << "K-means clustering mean time with distance function " << func_idx << ": " << duration / 10 << " seconds." << std::endl;
+
+        std::string output_path = "../dataset/output_image_" + std::to_string(func_idx) + ".png";
+        cv::imwrite(output_path, clustered_img);
     }
-    std::cout << "K-means clustering mean time: " << duration / 10 << " seconds." << std::endl;
-
-    // Display results resized to fit on screen
-    cv::resize(img, img, cv::Size(), 0.5, 0.5);
-    cv::resize(clustered_img, clustered_img, cv::Size(), 0.5, 0.5);
-    cv::imshow("Original Image", img);
-    cv::imshow("Clustered Image", clustered_img);
-    cv::waitKey(0);
-    cv::destroyAllWindows();
 
     return 0;
 }

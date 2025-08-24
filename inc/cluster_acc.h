@@ -19,12 +19,14 @@
  * @param dimensions Number of dimensions (e.g., 3 for RGB, 1 for grayscale)
  * @param stab_error Error bound to reach to end the algorithm
  * @param max_iterations Maximum number of iterations
+ * @param minkowski_parameter Parameter for Minkowski distance (ignored for other distances)
  */
 void k_means_acc (
     uint8_t* dst, uint8_t* img,
     size_t img_height, size_t img_width,
     unsigned int k, unsigned int dimensions,
-    float stab_error, int max_iterations
+    float stab_error, int max_iterations,
+    float minkowski_parameter
 );
 
 
@@ -39,12 +41,14 @@ void k_means_acc (
  * @param dimensions Number of dimensions (e.g., 3 for RGB, 1 for grayscale)
  * @param stab_error Error bound to reach to end the algorithm
  * @param max_iterations Maximum number of iterations
+ * @param minkowski_parameter Parameter for Minkowski distance (ignored for other distances)
  */
 void k_means_acc_old (
     uint8_t* dst, uint8_t* img,
     size_t img_height, size_t img_width,
     unsigned int k, unsigned int dimensions,
-    float stab_error, int max_iterations
+    float stab_error, int max_iterations,
+    float minkowski_parameter
 );
 
 #endif // CLUSTER_ACC_HPP
