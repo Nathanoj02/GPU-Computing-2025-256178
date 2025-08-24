@@ -25,7 +25,7 @@ int main() {
     double duration = 0.0;
     for (int i = 0; i < 10; i++) {
         double start_time = static_cast<double>(cv::getTickCount());
-        k_means(clustered_img.data, img.data, img_height, img_width, k, dimensions, stab_error, max_iterations);
+        k_means_acc(clustered_img.data, img.data, img_height, img_width, k, dimensions, stab_error, max_iterations);
         double end_time = static_cast<double>(cv::getTickCount());
 
         duration += (end_time - start_time) / cv::getTickFrequency();

@@ -39,7 +39,7 @@ int main() {
         cv::Mat clustered_img(img_height, img_width, frame.type());
     
         double start_time = static_cast<double>(cv::getTickCount());
-        k_means(clustered_img.data, frame.data, img_height, img_width, k, dimensions, stab_error, max_iterations);
+        k_means_acc(clustered_img.data, frame.data, img_height, img_width, k, dimensions, stab_error, max_iterations);
         double end_time = static_cast<double>(cv::getTickCount());
 
         duration += (end_time - start_time) / cv::getTickFrequency();
