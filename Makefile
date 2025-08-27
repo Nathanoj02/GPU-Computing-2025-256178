@@ -8,6 +8,11 @@ CC = nvc
 CXXFLAGS = -std=c++17 -Wall -O2 -g -acc -gpu=cc75 --diag_suppress partial_override
 CFLAGS = -std=c99 -Wall -O2 -g -acc -gpu=cc75
 
+# Profiling flags for Nsight Systems
+PROFILE_CXXFLAGS = -std=c++17 -O2 -g -lineinfo -acc -gpu=cc75 --diag_suppress partial_override
+PROFILE_CFLAGS = -std=c99 -O2 -g -lineinfo -acc -gpu=cc75
+PROFILE_LINKFLAGS = -std=c++17 -O2 -g -acc -gpu=cc75 --diag_suppress partial_override
+
 # OpenCV flags
 OPENCV_CFLAGS = $(shell pkg-config --cflags opencv4)
 OPENCV_LIBS = $(shell pkg-config --libs opencv4)
@@ -56,6 +61,28 @@ $(BINDIR)/%: $(OBJDIR)/%.o $(C_OBJECTS) | $(BINDIR)
 	@$(CXX) $(CXXFLAGS) $^ -o $@ $(OPENCV_LIBS) -lm
 	@echo "✓ Build complete: $@"
 
+# Special rule for profiling build of main_profile
+profile: $(BINDIR)/main_profile
+
+# Profiling object files with special flags
+$(OBJDIR)/main_profile_prof.o: $(SRCDIR)/main_profile.cpp | $(OBJDIR)
+	@echo "Compiling C++ for profiling: $<..."
+	@$(CXX) $(PROFILE_CXXFLAGS) $(OPENCV_CFLAGS) -I $(INCDIR) -c $< -o $@
+
+$(OBJDIR)/%_prof.o: $(SRCDIR)/%.c | $(OBJDIR)
+	@echo "Compiling C for profiling: $<..."
+	@$(CC) $(PROFILE_CFLAGS) -I $(INCDIR) -c $< -o $@
+
+# Generate profiling C objects from regular C sources
+C_OBJECTS_PROFILE = $(patsubst $(SRCDIR)/%.c,$(OBJDIR)/%_prof.o,$(C_SOURCES))
+
+# Link main_profile with profiling flags
+$(BINDIR)/main_profile: $(OBJDIR)/main_profile_prof.o $(C_OBJECTS_PROFILE) | $(BINDIR)
+	@echo "Linking $@ for profiling..."
+	@$(CXX) $(PROFILE_LINKFLAGS) $^ -o $@ $(OPENCV_LIBS) -lm
+	@echo "✓ Profiling build complete: $@"
+	@echo "Run with: nsys profile $(BINDIR)/main_profile [args]"
+
 # Clean generated files
 clean:
 	@echo "Cleaning..."
@@ -69,6 +96,7 @@ rebuild: clean all
 help:
 	@echo "Available targets:"
 	@echo "  all      - Build all executables (default)"
+	@echo "  ncu      - Build main_profile with profiling flags for Nsight Compute"
 	@echo "  clean    - Remove generated files"
 	@echo "  rebuild  - Clean and build all"
 	@echo "  help     - Show this help"
@@ -78,6 +106,10 @@ help:
 	@echo "  inc/     - Header files"
 	@echo "  bin/     - Generated executables"
 	@echo "  obj/     - Generated object files"
+	@echo ""
+	@echo "NCU Profiling:"
+	@echo "  make ncu                    - Build main_profile for profiling"
+	@echo "  ncu --set full bin/main_profile_ncu [args] - Profile with Nsight Compute"
 
 # Show found source files
 list:
@@ -96,6 +128,8 @@ debug:
 	@echo "CC: $(CC)"
 	@echo "CXXFLAGS: $(CXXFLAGS)"
 	@echo "CFLAGS: $(CFLAGS)"
+	@echo "PROFILE_CXXFLAGS: $(PROFILE_CXXFLAGS)"
+	@echo "PROFILE_CFLAGS: $(PROFILE_CFLAGS)"
 	@echo "OPENCV_CFLAGS: $(OPENCV_CFLAGS)"
 	@echo "OPENCV_LIBS: $(OPENCV_LIBS)"
 	@echo "CPP_SOURCES: $(CPP_SOURCES)"
@@ -104,4 +138,4 @@ debug:
 	@echo "EXECUTABLES: $(EXECUTABLES)"
 
 # Phony targets
-.PHONY: all clean rebuild help list debug
+.PHONY: all clean rebuild help list debug profile
