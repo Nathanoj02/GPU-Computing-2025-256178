@@ -1,7 +1,17 @@
 #include "cluster_acc.h"
 #include "distances.h"
 
-void k_means_acc (
+void _k_means_acc (
+    uint8_t* dst, uint8_t* img,
+    size_t img_height, size_t img_width,
+    unsigned int k, unsigned int dimensions,
+    uint8_t* prototypes,
+    float stab_error, int max_iterations,
+    float minkowski_parameter
+);
+
+
+void k_means_acc(
     uint8_t* dst, uint8_t* img,
     size_t img_height, size_t img_width,
     unsigned int k, unsigned int dimensions,
@@ -16,7 +26,120 @@ void k_means_acc (
     {
         prototypes[i] = rand() % 256;
     }
+
+    _k_means_acc(dst, img, img_height, img_width, k, dimensions, prototypes, stab_error, max_iterations, minkowski_parameter);
+
+    // Free memory
+    free (prototypes);
+}
+
+void k_means_pp_acc (
+    uint8_t* dst, uint8_t* img,
+    size_t img_height, size_t img_width,
+    unsigned int k, unsigned int dimensions,
+    float stab_error, int max_iterations,
+    float minkowski_parameter)
+{
+    srand(0);   // Seed for reproducibility
+
+    // Create k prototypes with random values
+    uint8_t* prototypes = (uint8_t*) malloc (sizeof(uint8_t) * k * dimensions);
+
+    size_t total_pixels = img_height * img_width;
+
+    // Random 1st centroid - select from actual image pixels
+    size_t first_pixel_idx = rand() % total_pixels;
+    for (unsigned int i = 0; i < dimensions; i++) 
+    {
+        prototypes[i] = img[first_pixel_idx * dimensions + i];
+    }
+
+    // K-means++ initialization for remaining centroids
+    float* distances = (float*) malloc(sizeof(float) * total_pixels);
     
+    for (unsigned int centroid_idx = 1; centroid_idx < k; centroid_idx++)
+    {
+        // Calculate minimum distance from each pixel to existing centroids
+        for (size_t pixel_idx = 0; pixel_idx < total_pixels; pixel_idx++)
+        {
+            float min_dist = FLT_MAX;
+            
+            // Find minimum distance to any existing centroid
+            for (unsigned int existing_centroid = 0; existing_centroid < centroid_idx; existing_centroid++)
+            {
+                float dist = euclidean_distance(
+                    img + pixel_idx * dimensions,
+                    prototypes + existing_centroid * dimensions,
+                    dimensions,
+                    0
+                );
+                
+                if (dist < min_dist)
+                {
+                    min_dist = dist;
+                }
+            }
+            
+            distances[pixel_idx] = min_dist;
+        }
+        
+        // Find pixel with maximum minimum distance
+        float max_min_dist = -1.0f;
+        size_t next_centroid_pixel = 0;
+        
+        for (size_t pixel_idx = 0; pixel_idx < total_pixels; pixel_idx++)
+        {
+            if (distances[pixel_idx] > max_min_dist)
+            {
+                max_min_dist = distances[pixel_idx];
+                next_centroid_pixel = pixel_idx;
+            }
+        }
+        
+        // Set the new centroid
+        for (unsigned int dim = 0; dim < dimensions; dim++)
+        {
+            prototypes[centroid_idx * dimensions + dim] = 
+                img[next_centroid_pixel * dimensions + dim];
+        }
+    }
+    
+    // Free temporary memory
+    free(distances);
+
+    // Call k-means
+    _k_means_acc(dst, img, img_height, img_width, k, dimensions, prototypes, stab_error, max_iterations, minkowski_parameter);
+
+    // Free memory
+    free (prototypes);
+}
+
+void k_means_custom_centroids (
+    uint8_t* dst, uint8_t* img,
+    size_t img_height, size_t img_width,
+    unsigned int k, unsigned int dimensions,
+    uint8_t* prototypes, bool calibration_mode,
+    float stab_error, int max_iterations,
+    float minkowski_parameter)
+{
+    if (calibration_mode) {
+        for (unsigned int i = 0; i < k * dimensions; i++) {
+            prototypes[i] = rand() % 256;
+        }
+    }
+    
+    // Just call k-means, prototypes are handled externally
+    _k_means_acc(dst, img, img_height, img_width, k, dimensions, prototypes, stab_error, max_iterations, minkowski_parameter);
+}
+
+void _k_means_acc (
+    uint8_t* dst, uint8_t* img,
+    size_t img_height, size_t img_width,
+    unsigned int k, unsigned int dimensions,
+    uint8_t* prototypes,
+    float stab_error, int max_iterations,
+    float minkowski_parameter)
+{   
     uint8_t* assigned_img = (uint8_t*) calloc (img_height * img_width, sizeof(uint8_t));
     uint8_t* old_prototypes = (uint8_t*) malloc (sizeof(uint8_t) * k * dimensions);
 
@@ -163,7 +286,6 @@ void k_means_acc (
     }
     
     // Free memory
-    free(prototypes);
     free(assigned_img);
     free(old_prototypes);
 }

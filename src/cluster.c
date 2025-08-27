@@ -1,7 +1,18 @@
 #include "cluster.h"
 #include "distances.h"
 
-void k_means (
+void _k_means (
+    uint8_t* dst, uint8_t* img,
+    size_t img_height, size_t img_width,
+    unsigned int k, unsigned int dimensions,
+    uint8_t* prototypes,
+    float stab_error, int max_iterations,
+    float (*distance_func)(const uint8_t*, const uint8_t*, unsigned int, float),
+    float minkowski_parameter
+);
+
+
+void k_means(
     uint8_t* dst, uint8_t* img,
     size_t img_height, size_t img_width,
     unsigned int k, unsigned int dimensions,
@@ -17,7 +28,22 @@ void k_means (
     {
         prototypes[i] = rand() % 256;
     }
-    
+
+    _k_means(dst, img, img_height, img_width, k, dimensions, prototypes, stab_error, max_iterations, distance_func, minkowski_parameter);
+
+    // Free memory
+    free (prototypes);
+}
+
+void _k_means (
+    uint8_t* dst, uint8_t* img,
+    size_t img_height, size_t img_width,
+    unsigned int k, unsigned int dimensions,
+    uint8_t* prototypes,
+    float stab_error, int max_iterations,
+    float (*distance_func)(const uint8_t*, const uint8_t*, unsigned int, float),
+    float minkowski_parameter)
+{
     uint8_t* assigned_img = (uint8_t*) calloc (img_height * img_width, sizeof(uint8_t));  // Map : pixels -> cluster number
 
     // Array for calculating means
@@ -119,7 +145,6 @@ void k_means (
     }
     
     // Free memory
-    free (prototypes);
     free (assigned_img);
     free (sums);
     free (counts);

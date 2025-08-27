@@ -4,6 +4,7 @@ extern "C" {
     #include "cluster.h"
     #include "cluster_acc.h"
     #include "distances.h"
+    #include "metrics.h"
 }
 
 int main(int argc, char** argv) {
@@ -29,6 +30,11 @@ int main(int argc, char** argv) {
     int frame_count = 0;
     int num_frames = cap.get(cv::CAP_PROP_FRAME_COUNT);
 
+    // Declarations for calibration
+    double best_error = FLT_MAX;
+    uint8_t* prototypes;
+    uint8_t* best_prototypes;
+
     // Initialize video writer
     cv::VideoWriter writer;
 
@@ -46,12 +52,36 @@ int main(int argc, char** argv) {
         float stab_error = 1.0f; // Convergence threshold
         int max_iterations = 100;
         cv::Mat clustered_img(img_height, img_width, frame.type());
-    
-        double start_time = static_cast<double>(cv::getTickCount());
-        k_means_acc(clustered_img.data, frame.data, img_height, img_width, k, dimensions, stab_error, max_iterations, 1.0f);
-        double end_time = static_cast<double>(cv::getTickCount());
 
-        duration += (end_time - start_time) / cv::getTickFrequency();
+        int calibration_frames = 10;    // Number of frames to use for calibration
+
+        // Alloc memory for prototypes
+        if (frame_count == 0) {
+            prototypes = (uint8_t*) malloc (sizeof(uint8_t) * k * dimensions);
+            best_prototypes = (uint8_t*) malloc (sizeof(uint8_t) * k * dimensions);
+        }
+
+        // During calibration
+        if (frame_count < calibration_frames) {
+            k_means_custom_centroids(clustered_img.data, frame.data, img_height, img_width, k, dimensions, prototypes, true, stab_error, max_iterations, 1.0f);
+        
+            // Perform sum of squares metric
+            double error = elbow_method(frame.data, clustered_img.data, img_height, img_width, k, dimensions, euclidean_distance, 0);
+        
+            if (error < best_error) {
+                best_error = error;
+                memcpy(best_prototypes, prototypes, sizeof(uint8_t) * k * dimensions);
+            }
+        }
+        // After calibration
+        else {
+            double start_time = static_cast<double>(cv::getTickCount());
+            k_means_custom_centroids(clustered_img.data, frame.data, img_height, img_width, k, dimensions, best_prototypes, false, stab_error, max_iterations, 1.0f);
+            double end_time = static_cast<double>(cv::getTickCount());
+
+            duration += (end_time - start_time) / cv::getTickFrequency();
+        }
+        
         frame_count++;
 
         // Save result into video file
@@ -71,7 +101,11 @@ int main(int argc, char** argv) {
             break;
         }
     }
-    
+
+    // Free memory
+    free(prototypes);
+    free(best_prototypes);
+
     std::cout << "K-means clustering mean time: " << duration / 30 << " seconds" << std::endl;
 
     cap.release();
