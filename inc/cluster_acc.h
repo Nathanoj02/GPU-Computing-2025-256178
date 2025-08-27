@@ -50,6 +50,14 @@ void k_means_pp_acc (
     float minkowski_parameter
 );
 
+void k_means_pixel_centroid (
+    uint8_t* dst, uint8_t* img,
+    size_t img_height, size_t img_width,
+    unsigned int k, unsigned int dimensions,
+    float stab_error, int max_iterations,
+    float minkowski_parameter
+);
+
 /**
  * K-means clustering algorithm with OpenACC with custom prototypes - ideal for working within a defined calibration
  * 

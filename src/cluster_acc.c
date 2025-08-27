@@ -47,11 +47,10 @@ void k_means_pp_acc (
 
     size_t total_pixels = img_height * img_width;
 
-    // Random 1st centroid - select from actual image pixels
-    size_t first_pixel_idx = rand() % total_pixels;
+    // Random 1st centroid
     for (unsigned int i = 0; i < dimensions; i++) 
     {
-        prototypes[i] = img[first_pixel_idx * dimensions + i];
+        prototypes[i] = rand() % 256;
     }
 
     // K-means++ initialization for remaining centroids
@@ -112,6 +111,33 @@ void k_means_pp_acc (
 
     // Free memory
     free (prototypes);
+}
+
+void k_means_pixel_centroid (
+    uint8_t* dst, uint8_t* img,
+    size_t img_height, size_t img_width,
+    unsigned int k, unsigned int dimensions,
+    float stab_error, int max_iterations,
+    float minkowski_parameter)
+{
+    srand(0);
+    uint8_t* prototypes = (uint8_t*) malloc (sizeof(uint8_t) * k * dimensions);
+
+    size_t total_pixels = img_height * img_width;
+
+    // Select from actual image pixels
+    for (unsigned int j = 0; j < k; j++)
+    {
+        size_t first_pixel_idx = rand() % total_pixels;
+        for (unsigned int i = 0; i < dimensions; i++) 
+        {
+            prototypes[j * dimensions + i] = img[first_pixel_idx * dimensions + i];
+        }
+    }
+
+    _k_means_acc(dst, img, img_height, img_width, k, dimensions, prototypes, stab_error, max_iterations, minkowski_parameter);
+
+    free(prototypes);
 }
 
 void k_means_custom_centroids (
