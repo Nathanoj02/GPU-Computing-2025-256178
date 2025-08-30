@@ -1,67 +1,40 @@
 #include "cluster_acc.h"
 #include "distances.h"
+#include "kmeans.h"
 
 /* ======= K-means core algorithms definitions ======= */
-void _k_means_acc (
-    uint8_t* dst, uint8_t* img,
-    size_t img_height, size_t img_width,
-    unsigned int k, unsigned int dimensions,
-    uint8_t* prototypes,
-    float stab_error, int max_iterations,
-    float minkowski_parameter
-);
+void _k_means_acc (KMeansParams* params, uint8_t* prototypes);
 
-void _k_means_acc_tiled (
-    uint8_t* dst, uint8_t* img,
-    size_t img_height, size_t img_width,
-    unsigned int k, unsigned int dimensions,
-    uint8_t* prototypes,
-    float stab_error, int max_iterations,
-    float minkowski_parameter
-);
+void _k_means_acc_tiled (KMeansParams* params, uint8_t* prototypes);
 
-void _k_means_acc_check_conv (
-    uint8_t* dst, uint8_t* img,
-    size_t img_height, size_t img_width,
-    unsigned int k, unsigned int dimensions,
-    uint8_t* prototypes,
-    float stab_error, int max_iterations,
-    float minkowski_parameter, int check_convergence_step
-);
+void _k_means_acc_check_conv (KMeansParams* params, uint8_t* prototypes, int check_convergence_step);
 /* =================================================== */
 
 
 /* ======= 'Public' K-means clustering algorithms ======= */
-void k_means_acc(
-    uint8_t* dst, uint8_t* img,
-    size_t img_height, size_t img_width,
-    unsigned int k, unsigned int dimensions,
-    float stab_error, int max_iterations,
-    float minkowski_parameter)
+void k_means_acc(KMeansParams* params)
 {
-    srand(0);   // Seed for reproducibility
-
     // Create k prototypes with random values
-    uint8_t* prototypes = (uint8_t*) malloc (sizeof(uint8_t) * k * dimensions);
-    for (unsigned int i = 0; i < k * dimensions; i++) 
+    uint8_t* prototypes = (uint8_t*) malloc (sizeof(uint8_t) * params->k * params->dimensions);
+    for (unsigned int i = 0; i < params->k * params->dimensions; i++) 
     {
         prototypes[i] = rand() % 256;
     }
 
-    _k_means_acc(dst, img, img_height, img_width, k, dimensions, prototypes, stab_error, max_iterations, minkowski_parameter);
+    _k_means_acc(params, prototypes);
 
     // Free memory
     free (prototypes);
 }
 
-void k_means_pp_acc (
-    uint8_t* dst, uint8_t* img,
-    size_t img_height, size_t img_width,
-    unsigned int k, unsigned int dimensions,
-    float stab_error, int max_iterations,
-    float minkowski_parameter)
+void k_means_pp_acc (KMeansParams* params)
 {
-    srand(0);
+    // For OpenACC -> Destructure struct (to have better control)
+    uint8_t* img = params->img;
+    size_t img_height = params->img_height;
+    size_t img_width = params->img_width;
+    unsigned int k = params->k;
+    unsigned int dimensions = params->dimensions;
 
     uint8_t* prototypes = (uint8_t*) malloc (sizeof(uint8_t) * k * dimensions);
 
@@ -148,92 +121,67 @@ void k_means_pp_acc (
     // Free temporary memory
     free(distances);
 
-    _k_means_acc(dst, img, img_height, img_width, k, dimensions, prototypes, stab_error, max_iterations, minkowski_parameter);
+    _k_means_acc(params, prototypes);
 
     free (prototypes);
 }
 
-void k_means_pixel_centroid (
-    uint8_t* dst, uint8_t* img,
-    size_t img_height, size_t img_width,
-    unsigned int k, unsigned int dimensions,
-    float stab_error, int max_iterations,
-    float minkowski_parameter)
+void k_means_pixel_centroid (KMeansParams* params)
 {
-    srand(0);
-    uint8_t* prototypes = (uint8_t*) malloc (sizeof(uint8_t) * k * dimensions);
+    uint8_t* prototypes = (uint8_t*) malloc (sizeof(uint8_t) * params->k * params->dimensions);
 
-    size_t total_pixels = img_height * img_width;
+    size_t total_pixels = params->img_height * params->img_width;
 
     // Select from actual image pixels
-    for (unsigned int j = 0; j < k; j++)
+    for (unsigned int j = 0; j < params->k; j++)
     {
         size_t first_pixel_idx = rand() % total_pixels;
-        for (unsigned int i = 0; i < dimensions; i++) 
+        for (unsigned int i = 0; i < params->dimensions; i++) 
         {
-            prototypes[j * dimensions + i] = img[first_pixel_idx * dimensions + i];
+            prototypes[j * params->dimensions + i] = params->img[first_pixel_idx * params->dimensions + i];
         }
     }
 
-    _k_means_acc(dst, img, img_height, img_width, k, dimensions, prototypes, stab_error, max_iterations, minkowski_parameter);
+    _k_means_acc(params, prototypes);
 
     free(prototypes);
 }
 
-void k_means_custom_centroids (
-    uint8_t* dst, uint8_t* img,
-    size_t img_height, size_t img_width,
-    unsigned int k, unsigned int dimensions,
-    uint8_t* prototypes, bool calibration_mode,
-    float stab_error, int max_iterations,
-    float minkowski_parameter)
+void k_means_custom_centroids (KMeansParams* params, uint8_t* prototypes, bool calibration_mode)
 {
     if (calibration_mode) {
-        for (unsigned int i = 0; i < k * dimensions; i++) {
+        for (unsigned int i = 0; i < params->k * params->dimensions; i++) {
             prototypes[i] = rand() % 256;
         }
     }
     
     // Just call k-means, prototypes are handled externally
-    _k_means_acc(dst, img, img_height, img_width, k, dimensions, prototypes, stab_error, max_iterations, minkowski_parameter);
+    _k_means_acc(params, prototypes);
 }
 
-void k_means_acc_tiled (
-    uint8_t* dst, uint8_t* img,
-    size_t img_height, size_t img_width,
-    unsigned int k, unsigned int dimensions,
-    float stab_error, int max_iterations,
-    float minkowski_parameter)
+void k_means_acc_tiled (KMeansParams* params)
 {
-    srand(0);
-    uint8_t* prototypes = (uint8_t*) malloc (sizeof(uint8_t) * k * dimensions);
-    for (unsigned int i = 0; i < k * dimensions; i++) 
+    uint8_t* prototypes = (uint8_t*) malloc (sizeof(uint8_t) * params->k * params->dimensions);
+    for (unsigned int i = 0; i < params->k * params->dimensions; i++) 
     {
         prototypes[i] = rand() % 256;
     }
 
-    _k_means_acc_tiled(dst, img, img_height, img_width, k, dimensions, prototypes, stab_error, max_iterations, minkowski_parameter);
+    _k_means_acc_tiled(params, prototypes);
 
     free (prototypes);
 }
 
-void k_means_acc_check_conv (
-    uint8_t* dst, uint8_t* img,
-    size_t img_height, size_t img_width,
-    unsigned int k, unsigned int dimensions,
-    float stab_error, int max_iterations,
-    float minkowski_parameter, int check_convergence_step)
+void k_means_acc_check_conv (KMeansParams* params, int check_convergence_step)
 {
-    srand(0);   // Seed for reproducibility
-
     // Create k prototypes with random values
-    uint8_t* prototypes = (uint8_t*) malloc (sizeof(uint8_t) * k * dimensions);
-    for (unsigned int i = 0; i < k * dimensions; i++) 
+    uint8_t* prototypes = (uint8_t*) malloc (sizeof(uint8_t) * params->k * params->dimensions);
+    for (unsigned int i = 0; i < params->k * params->dimensions; i++) 
     {
         prototypes[i] = rand() % 256;
     }
 
-    _k_means_acc_check_conv(dst, img, img_height, img_width, k, dimensions, prototypes, stab_error, max_iterations, minkowski_parameter, check_convergence_step);
+    _k_means_acc_check_conv(params, prototypes, check_convergence_step);
 
     // Free memory
     free (prototypes);
@@ -242,18 +190,22 @@ void k_means_acc_check_conv (
 
 
 /* ======= K-means core algorithms implementations ======= */
-void _k_means_acc (
-    uint8_t* dst, uint8_t* img,
-    size_t img_height, size_t img_width,
-    unsigned int k, unsigned int dimensions,
-    uint8_t* prototypes,
-    float stab_error, int max_iterations,
-    float minkowski_parameter)
+void _k_means_acc (KMeansParams* params, uint8_t* prototypes)
 {   
-    uint8_t* assigned_img = (uint8_t*) calloc (img_height * img_width, sizeof(uint8_t));
-    uint8_t* old_prototypes = (uint8_t*) malloc (sizeof(uint8_t) * k * dimensions);
+    // For OpenACC -> Destructure struct (to have better control)
+    uint8_t* dst = params->dst;
+    uint8_t* img = params->img;
+    size_t img_height = params->img_height;
+    size_t img_width = params->img_width;
+    unsigned int k = params->k;
+    unsigned int dimensions = params->dimensions;
+    float stab_error = params->stab_error;
+    int max_iterations = params->max_iterations;
 
-    size_t total_pixels = img_height * img_width;
+    uint8_t* assigned_img = (uint8_t*) calloc (params->img_height * params->img_width, sizeof(uint8_t));
+    uint8_t* old_prototypes = (uint8_t*) malloc (sizeof(uint8_t) * params->k * params->dimensions);
+
+    size_t total_pixels = params->img_height * params->img_width;
     
     bool bound_reached = false;
 
@@ -264,7 +216,7 @@ void _k_means_acc (
     {
         for (int iteration_count = 0; 
              !bound_reached && iteration_count < max_iterations; 
-             iteration_count++) 
+             iteration_count++)
         {
             // Save old prototypes
             #pragma acc parallel loop present(prototypes, old_prototypes)
@@ -290,7 +242,7 @@ void _k_means_acc (
                             &img[img_offset], 
                             &prototypes[p * dimensions], 
                             dimensions,
-                            minkowski_parameter
+                            0
                         );
 
                         if (distance < min_distance) {
@@ -304,15 +256,15 @@ void _k_means_acc (
 
             // Accumulation phase - sum up pixel values for each cluster
             // Use atomic operations for accumulation
-            uint64_t* sums = (uint64_t*) calloc(k * dimensions, sizeof(uint64_t));
-            uint64_t* counts = (uint64_t*) calloc(k, sizeof(uint64_t));
-            
+            uint64_t* sums = (uint64_t*) calloc (k * dimensions, sizeof(uint64_t));
+            uint64_t* counts = (uint64_t*) calloc (k, sizeof(uint64_t));
+
             #pragma acc data create(sums[:k*dimensions], counts[:k])
             {
                 // Initialize arrays to zero on device
                 #pragma acc parallel loop present(sums)
                 for (unsigned int i = 0; i < k * dimensions; i++) sums[i] = 0;
-                
+
                 #pragma acc parallel loop present(counts)
                 for (unsigned int i = 0; i < k; i++) counts[i] = 0;
 
@@ -325,7 +277,7 @@ void _k_means_acc (
                     {
                         uint8_t cluster_id = assigned_img[i * img_width + j];
                         size_t img_offset = i * img_width * dimensions + j * dimensions;
-                        
+
                         // Atomic updates for thread safety
                         for (unsigned int d = 0; d < dimensions; d++) {
                             #pragma acc atomic update
@@ -370,7 +322,7 @@ void _k_means_acc (
                     max_diff_squared = distance_squared;
                 }
             }
-            
+
             bound_reached = (max_diff_squared <= stab_error);
         }
 
@@ -383,8 +335,8 @@ void _k_means_acc (
             {
                 uint8_t index = assigned_img[i * img_width + j];
                 size_t dst_offset = i * img_width * dimensions + j * dimensions;
-                
-                for (unsigned int d = 0; d < dimensions; d++) 
+
+                for (unsigned int d = 0; d < dimensions; d++)
                 {
                     dst[dst_offset + d] = prototypes[index * dimensions + d];
                 }
@@ -397,14 +349,18 @@ void _k_means_acc (
     free(old_prototypes);
 }
 
-void _k_means_acc_tiled (
-    uint8_t* dst, uint8_t* img,
-    size_t img_height, size_t img_width,
-    unsigned int k, unsigned int dimensions,
-    uint8_t* prototypes,
-    float stab_error, int max_iterations,
-    float minkowski_parameter)
+void _k_means_acc_tiled (KMeansParams* params, uint8_t* prototypes)
 {   
+    // For OpenACC -> Destructure struct (to have better control)
+    uint8_t* dst = params->dst;
+    uint8_t* img = params->img;
+    size_t img_height = params->img_height;
+    size_t img_width = params->img_width;
+    unsigned int k = params->k;
+    unsigned int dimensions = params->dimensions;
+    float stab_error = params->stab_error;
+    int max_iterations = params->max_iterations;
+
     uint8_t* assigned_img = (uint8_t*) calloc (img_height * img_width, sizeof(uint8_t));
     uint8_t* old_prototypes = (uint8_t*) malloc (sizeof(uint8_t) * k * dimensions);
 
@@ -445,7 +401,7 @@ void _k_means_acc_tiled (
                             &img[img_offset], 
                             &prototypes[p * dimensions], 
                             dimensions,
-                            minkowski_parameter
+                            0
                         );
 
                         if (distance < min_distance) {
@@ -461,7 +417,7 @@ void _k_means_acc_tiled (
             // Use atomic operations for accumulation
             uint64_t* sums = (uint64_t*) calloc(k * dimensions, sizeof(uint64_t));
             uint64_t* counts = (uint64_t*) calloc(k, sizeof(uint64_t));
-            
+
             #pragma acc data create(sums[:k*dimensions], counts[:k])
             {
                 // Initialize arrays to zero on device
@@ -538,8 +494,8 @@ void _k_means_acc_tiled (
             {
                 uint8_t index = assigned_img[i * img_width + j];
                 size_t dst_offset = i * img_width * dimensions + j * dimensions;
-                
-                for (unsigned int d = 0; d < dimensions; d++) 
+
+                for (unsigned int d = 0; d < dimensions; d++)
                 {
                     dst[dst_offset + d] = prototypes[index * dimensions + d];
                 }
@@ -553,14 +509,18 @@ void _k_means_acc_tiled (
 }
 
 /* --- Other optimization tentatives --- */
-void _k_means_acc_check_conv (
-    uint8_t* dst, uint8_t* img,
-    size_t img_height, size_t img_width,
-    unsigned int k, unsigned int dimensions,
-    uint8_t* prototypes,
-    float stab_error, int max_iterations,
-    float minkowski_parameter, int check_convergence_step)
+void _k_means_acc_check_conv (KMeansParams* params, uint8_t* prototypes, int check_convergence_step)
 {   
+    // For OpenACC -> Destructure struct (to have better control)
+    uint8_t* dst = params->dst;
+    uint8_t* img = params->img;
+    size_t img_height = params->img_height;
+    size_t img_width = params->img_width;
+    unsigned int k = params->k;
+    unsigned int dimensions = params->dimensions;
+    float stab_error = params->stab_error;
+    int max_iterations = params->max_iterations;
+
     uint8_t* assigned_img = (uint8_t*) calloc (img_height * img_width, sizeof(uint8_t));
     uint8_t* old_prototypes = (uint8_t*) malloc (sizeof(uint8_t) * k * dimensions);
 
@@ -601,7 +561,7 @@ void _k_means_acc_check_conv (
                             &img[img_offset], 
                             &prototypes[p * dimensions], 
                             dimensions,
-                            minkowski_parameter
+                            0
                         );
 
                         if (distance < min_distance) {
@@ -617,7 +577,7 @@ void _k_means_acc_check_conv (
             // Use atomic operations for accumulation
             uint64_t* sums = (uint64_t*) calloc(k * dimensions, sizeof(uint64_t));
             uint64_t* counts = (uint64_t*) calloc(k, sizeof(uint64_t));
-            
+
             #pragma acc data create(sums[:k*dimensions], counts[:k])
             {
                 // Initialize arrays to zero on device
@@ -684,7 +644,7 @@ void _k_means_acc_check_conv (
                         max_diff_squared = distance_squared;
                     }
                 }
-                
+
                 bound_reached = (max_diff_squared <= stab_error);
             }
         }
@@ -698,8 +658,8 @@ void _k_means_acc_check_conv (
             {
                 uint8_t index = assigned_img[i * img_width + j];
                 size_t dst_offset = i * img_width * dimensions + j * dimensions;
-                
-                for (unsigned int d = 0; d < dimensions; d++) 
+
+                for (unsigned int d = 0; d < dimensions; d++)
                 {
                     dst[dst_offset + d] = prototypes[index * dimensions + d];
                 }
@@ -714,14 +674,17 @@ void _k_means_acc_check_conv (
 
 
 /* Old version before fixes */
-void k_means_acc_old (
-    uint8_t* dst, uint8_t* img,
-    size_t img_height, size_t img_width,
-    unsigned int k, unsigned int dimensions,
-    float stab_error, int max_iterations,
-    float minkowski_parameter)
+void k_means_acc_old (KMeansParams* params)
 {
-    srand(0);   // Seed for reproducibility
+    // For OpenACC -> Destructure struct (to have better control)
+    uint8_t* dst = params->dst;
+    uint8_t* img = params->img;
+    size_t img_height = params->img_height;
+    size_t img_width = params->img_width;
+    unsigned int k = params->k;
+    unsigned int dimensions = params->dimensions;
+    float stab_error = params->stab_error;
+    int max_iterations = params->max_iterations;
 
     // Create k prototypes with random values
     uint8_t* prototypes = (uint8_t*) malloc (sizeof(uint8_t) * k * dimensions);
@@ -729,7 +692,7 @@ void k_means_acc_old (
     {
         prototypes[i] = rand() % 256;
     }
-    
+
     uint8_t* assigned_img = (uint8_t*) calloc (img_height * img_width, sizeof(uint8_t));  // Map : pixels -> cluster number
 
     // Array for calculating means
@@ -777,7 +740,7 @@ void k_means_acc_old (
                             &img[i * img_width * dimensions + j * dimensions], 
                             &prototypes[p * dimensions], 
                             dimensions,
-                            minkowski_parameter
+                            0
                         );
 
                         if (distance < min_distance) {
@@ -796,7 +759,7 @@ void k_means_acc_old (
                 for (size_t j = 0; j < img_width; j++)
                 {
                     int cluster_id = assigned_img[i * img_width + j];
-                    
+
                     for (unsigned int d = 0; d < dimensions; d++) {
                         #pragma acc atomic update
                         sums[cluster_id * dimensions + d] += img[i * img_width * dimensions + j * dimensions + d];
@@ -820,7 +783,7 @@ void k_means_acc_old (
             }
 
             #pragma acc update host(prototypes[:k*dimensions])
-            
+
             // Calculate differences
             bound_reached = true;
 
@@ -830,7 +793,7 @@ void k_means_acc_old (
                     &prototypes[i * dimensions],
                     &old_prototypes[i * dimensions],
                     dimensions,
-                    0.0f
+                    0
                 );
 
                 if (distance_squared > stab_error)
@@ -853,7 +816,7 @@ void k_means_acc_old (
             for (size_t j = 0; j < img_width; j++)
             {
                 int index = assigned_img[i * img_width + j];
-    
+
                 for (unsigned int d = 0; d < dimensions; d++) 
                 {
                     dst[i * img_width * dimensions + j * dimensions + d] = prototypes[index * dimensions + d];

@@ -5,6 +5,7 @@ extern "C" {
     #include "cluster_acc.h"
     #include "distances.h"
     #include "metrics.h"
+    #include "kmeans.h"
 }
 
 int main(int argc, char** argv) {
@@ -14,6 +15,8 @@ int main(int argc, char** argv) {
         return -1;
     }
 
+    srand(0);   // Seed for reproducibility
+
     std::string image_path = argv[1];
 
     // Load image
@@ -22,27 +25,32 @@ int main(int argc, char** argv) {
         return -1;
     }
 
-    size_t img_height = img.rows;
-    size_t img_width = img.cols;
-    unsigned int dimensions = img.channels(); // Number of channels (e.g., 3 for RGB)
+    KMeansParams params;
+    params.img_height = img.rows;
+    params.img_width = img.cols;
+    params.dimensions = img.channels(); // Number of channels (e.g., 3 for RGB)
 
-    cv::Mat clustered_img(img_height, img_width, img.type());
-    float stab_error = 1.0f; // Convergence threshold
-    int max_iterations = 100;
+    cv::Mat clustered_img(params.img_height, params.img_width, img.type());
+    params.stab_error = 1.0f; // Convergence threshold
+    params.max_iterations = 100;
 
+    params.img = img.data;
+    params.dst = clustered_img.data;
 
     float (*distance_func)(const uint8_t*, const uint8_t*, unsigned int, float) = euclidean_distance;
 
     for (unsigned int k = 2; k <= 10; k++)
     {
-        k_means(clustered_img.data, img.data, img_height, img_width, k, dimensions, stab_error, max_iterations, distance_func, 1.5f);
+        params.k = k;
+
+        k_means(&params, distance_func, 1.5f);
     
         // Evaluate
-        double elbow_err = elbow_method(img.data, clustered_img.data, img_height, img_width, k, dimensions, distance_func, 1.5f);
+        double elbow_err = elbow_method(params.img, params.dst, params.img_height, params.img_width, k, params.dimensions, distance_func, 1.5f);
         std::cout << "Elbow method total squared error for k=" << k << ": " << elbow_err << std::endl;
         std::flush(std::cout);
-    
-        double silhouette_score = silhouette_method_sampled(img.data, clustered_img.data, img_height, img_width, k, dimensions, distance_func, 1.5f, 5000);
+
+        double silhouette_score = silhouette_method_sampled(params.img, params.dst, params.img_height, params.img_width, k, params.dimensions, distance_func, 1.5f, 5000);
         std::cout << "Silhouette method average score for k=" << k << ": " << silhouette_score << std::endl;
     }
 

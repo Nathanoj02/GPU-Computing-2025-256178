@@ -5,6 +5,7 @@ extern "C" {
     #include "cluster_acc.h"
     #include "distances.h"
     #include "metrics.h"
+    #include "kmeans.h"
 }
 
 int main(int argc, char** argv) {
@@ -14,7 +15,11 @@ int main(int argc, char** argv) {
         return -1;
     }
 
-    unsigned int k = std::stoi(argv[1]);
+    srand(0);   // Seed for reproducibility
+
+    KMeansParams params;
+    
+    params.k = std::stoi(argv[1]);
     std::string image_path = argv[2];
 
     // Load image
@@ -23,13 +28,16 @@ int main(int argc, char** argv) {
         return -1;
     }
 
-    size_t img_height = img.rows;
-    size_t img_width = img.cols;
-    unsigned int dimensions = img.channels(); // Number of channels (e.g., 3 for RGB)
+    params.img_height = img.rows;
+    params.img_width = img.cols;
+    params.dimensions = img.channels(); // Number of channels (e.g., 3 for RGB)
 
-    cv::Mat clustered_img(img_height, img_width, img.type());
-    float stab_error = 1.0f; // Convergence threshold
-    int max_iterations = 100;
+    cv::Mat clustered_img(params.img_height, params.img_width, img.type());
+    params.stab_error = 1.0f; // Convergence threshold
+    params.max_iterations = 100;
+
+    params.img = img.data;
+    params.dst = clustered_img.data;
 
     // Array with all distances functions
     float (*distance_functions[])(const uint8_t*, const uint8_t*, unsigned int, float) = {
@@ -48,7 +56,7 @@ int main(int argc, char** argv) {
         for (int i = 0; i < 10; i++)
         {
             double start_time = static_cast<double>(cv::getTickCount());
-            k_means(clustered_img.data, img.data, img_height, img_width, k, dimensions, stab_error, max_iterations, distance_functions[func_idx], 1.5f);
+            k_means(&params, distance_functions[func_idx], 1.5f);
             double end_time = static_cast<double>(cv::getTickCount());
 
             duration += (end_time - start_time) / cv::getTickFrequency();

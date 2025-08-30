@@ -1,3 +1,6 @@
+#ifndef METRICS_H
+#define METRICS_H
+
 #include <stdint.h>
 #include <malloc.h>
 #include <stdlib.h>
@@ -45,3 +48,5 @@ double silhouette_method_sampled (
     float (*distance_func)(const uint8_t*, const uint8_t*, unsigned int, float),
     float minkowski_parameter,
     unsigned int max_samples);
+
+#endif // METRICS_H
