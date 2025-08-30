@@ -15,8 +15,6 @@ void k_means(
     float (*distance_func)(const uint8_t*, const uint8_t*, unsigned int, float),
     float minkowski_parameter)
 {
-    srand(0);   // Seed for reproducibility
-
     // Create k prototypes with random values
     uint8_t* prototypes = (uint8_t*) malloc (sizeof(uint8_t) * params->k * params->dimensions);
     for (unsigned int i = 0; i < params->k * params->dimensions; i++) 

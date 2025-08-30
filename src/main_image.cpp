@@ -8,19 +8,77 @@ extern "C" {
     #include "kmeans.h"
 }
 
-int main(int argc, char** argv) {
-    // Get k and image name from command line arguments
-    if (argc < 3) {
-        std::cerr << "Usage: " << argv[0] << " <k> <image_path>" << std::endl;
-        return -1;
-    }
+std::string generateOutputPath(const std::string& input_image_path);
 
+int main(int argc, char** argv) {
     srand(0);   // Seed for reproducibility
 
     KMeansParams params;
+    std::string image_path;
     
-    params.k = std::stoi(argv[1]);
-    std::string image_path = argv[2];
+    // Default values
+    params.k = 0;  // Will be set as required
+    params.stab_error = 1.0f;   // Convergence threshold
+    params.max_iterations = 100;
+    
+    // Parse command line arguments
+    bool k_set = false, image_set = false;
+    
+    for (int i = 1; i < argc; i++) {
+        std::string arg = argv[i];
+        
+        if (arg == "-k" && i + 1 < argc) {
+            params.k = std::stoi(argv[++i]);
+            k_set = true;
+        }
+        else if (arg == "-i" && i + 1 < argc) {
+            image_path = argv[++i];
+            image_set = true;
+        }
+        else if (arg == "-e" && i + 1 < argc) {
+            params.stab_error = std::stof(argv[++i]);
+        }
+        else if (arg == "-mi" && i + 1 < argc) {
+            params.max_iterations = std::stoi(argv[++i]);
+        }
+        else if (arg == "-h" || arg == "--help") {
+            std::cout << "Usage: " << argv[0] << " -k <clusters> -i <image_path> [-e <stab_error>] [-mi <max_iterations>]\n";
+            std::cout << "  -k <clusters>      Number of clusters (required)\n";
+            std::cout << "  -i <image_path>    Path to input image (required)\n";
+            std::cout << "  -e <stab_error>    Stability error threshold (default: 1.0)\n";
+            std::cout << "  -mi <max_iterations> Maximum iterations (default: 100)\n";
+            std::cout << "  -h, --help         Show this help message\n";
+            return 0;
+        }
+        else {
+            std::cerr << "Unknown argument: " << arg << std::endl;
+            std::cerr << "Use -h or --help for usage information." << std::endl;
+            return -1;
+        }
+    }
+    
+    // Check required arguments
+    if (!k_set || !image_set) {
+        std::cerr << "Error: Both -k and -i arguments are required." << std::endl;
+        std::cerr << "Usage: " << argv[0] << " -k <clusters> -i <image_path> [-e <stab_error>] [-mi <max_iterations>]" << std::endl;
+        return -1;
+    }
+    
+    // Validate arguments
+    if (params.k <= 0) {
+        std::cerr << "Error: Number of clusters must be positive." << std::endl;
+        return -1;
+    }
+    
+    if (params.stab_error < 0) {
+        std::cerr << "Error: Stability error must be non-negative." << std::endl;
+        return -1;
+    }
+    
+    if (params.max_iterations <= 0) {
+        std::cerr << "Error: Maximum iterations must be positive." << std::endl;
+        return -1;
+    }
 
     // Load image
     cv::Mat img = cv::imread(image_path);
@@ -33,11 +91,11 @@ int main(int argc, char** argv) {
     params.dimensions = img.channels(); // Number of channels (e.g., 3 for RGB)
 
     cv::Mat clustered_img(params.img_height, params.img_width, img.type());
-    params.stab_error = 1.0f; // Convergence threshold
-    params.max_iterations = 100;
 
     params.img = img.data;
     params.dst = clustered_img.data;
+
+    std::string output_image_path = generateOutputPath(image_path);
 
     // Array with all distances functions
     float (*distance_functions[])(const uint8_t*, const uint8_t*, unsigned int, float) = {
@@ -64,9 +122,35 @@ int main(int argc, char** argv) {
 
         std::cout << "K-means clustering mean time with distance function " << func_idx << ": " << duration / 10 << " seconds." << std::endl;
 
-        std::string output_path = "../dataset/output_image_" + std::to_string(func_idx) + ".png";
+        std::string output_path = output_image_path + "_" + std::to_string(func_idx) + ".png";
         cv::imwrite(output_path, clustered_img);
     }
 
     return 0;
+}
+
+std::string generateOutputPath(const std::string& input_image_path) {
+    size_t last_slash = input_image_path.find_last_of("/\\");
+    size_t last_dot = input_image_path.find_last_of(".");
+    
+    std::string directory;
+    std::string filename_without_ext;
+    
+    if (last_slash != std::string::npos) {
+        directory = input_image_path.substr(0, last_slash + 1);
+        if (last_dot != std::string::npos && last_dot > last_slash) {
+            filename_without_ext = input_image_path.substr(last_slash + 1, last_dot - last_slash - 1);
+        } else {
+            filename_without_ext = input_image_path.substr(last_slash + 1);
+        }
+    } else {
+        directory = "./";
+        if (last_dot != std::string::npos) {
+            filename_without_ext = input_image_path.substr(0, last_dot);
+        } else {
+            filename_without_ext = input_image_path;
+        }
+    }
+    
+    return directory + "output_" + filename_without_ext + "_clustered";
 }
