@@ -8,6 +8,11 @@ extern "C" {
     #include "kmeans.h"
 }
 
+#include <fstream>
+
+#define START_K 2
+#define END_K 10
+
 int main(int argc, char** argv) {
     srand(0);   // Seed for reproducibility
 
@@ -84,7 +89,10 @@ int main(int argc, char** argv) {
 
     float (*distance_func)(const uint8_t*, const uint8_t*, unsigned int, float) = euclidean_distance;
 
-    for (unsigned int k = 2; k <= 10; k++)
+    // Matrix for timing results
+    std::vector<std::vector<double>> data(END_K - START_K + 1, std::vector<double>(2));
+
+    for (unsigned int k = START_K; k <= END_K; k++)
     {
         params.k = k;
 
@@ -97,9 +105,36 @@ int main(int argc, char** argv) {
 
         double silhouette_score = silhouette_method_sampled(params.img, params.dst, params.img_height, params.img_width, k, params.dimensions, distance_func, 1.5f, 5000);
         std::cout << "Silhouette method average score for k=" << k << ": " << silhouette_score << std::endl;
+
+        data[k - START_K][0] = elbow_err;
+        data[k - START_K][1] = silhouette_score;
     }
 
     cv::destroyAllWindows();
+
+    // Create CSV file
+    std::ofstream file("results/metrics.csv");
+    
+    if (!file.is_open()) {
+        std::cerr << "Error opening file!" << std::endl;
+        return 1;
+    }
+
+    // Write header row
+    file << "Elbow method total squared error,Silhouette method average score\n";
+
+    // Write data rows
+    for (const auto& row : data) {
+        for (size_t i = 0; i < row.size(); ++i) {
+            file << row[i];
+            if (i < row.size() - 1) {
+                file << ",";  // Add comma between values
+            }
+        }
+        file << "\n";  // New line after each row
+    }
+    
+    file.close();
 
     return 0;
 }

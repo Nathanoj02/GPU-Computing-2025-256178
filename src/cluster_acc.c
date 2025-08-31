@@ -238,7 +238,7 @@ void _k_means_acc (KMeansParams* params, uint8_t* prototypes)
                     // Find nearest prototype
                     for (unsigned int p = 0; p < k; p++)
                     {
-                        float distance = manhattan_distance(
+                        float distance = euclidean_distance(
                             &img[img_offset], 
                             &prototypes[p * dimensions], 
                             dimensions,
@@ -397,7 +397,7 @@ void _k_means_acc_tiled (KMeansParams* params, uint8_t* prototypes)
                     // Find nearest prototype
                     for (unsigned int p = 0; p < k; p++)
                     {
-                        float distance = manhattan_distance(
+                        float distance = euclidean_distance(
                             &img[img_offset], 
                             &prototypes[p * dimensions], 
                             dimensions,
@@ -557,7 +557,7 @@ void _k_means_acc_check_conv (KMeansParams* params, uint8_t* prototypes, int che
                     // Find nearest prototype
                     for (unsigned int p = 0; p < k; p++)
                     {
-                        float distance = manhattan_distance(
+                        float distance = euclidean_distance(
                             &img[img_offset], 
                             &prototypes[p * dimensions], 
                             dimensions,
@@ -736,7 +736,7 @@ void k_means_acc_old (KMeansParams* params)
 
                     for (unsigned int p = 0; p < k; p++)
                     {
-                        float distance = manhattan_distance(
+                        float distance = euclidean_distance(
                             &img[i * img_width * dimensions + j * dimensions], 
                             &prototypes[p * dimensions], 
                             dimensions,

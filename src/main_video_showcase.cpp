@@ -8,11 +8,6 @@ extern "C" {
     #include "kmeans.h"
 }
 
-#include <fstream>
-
-#define WARM_UP_FRAMES 5
-#define MEASURED_FRAMES 20
-
 std::string generateOutputPath(const std::string& input_video_path);
 
 int main(int argc, char** argv) {
@@ -102,8 +97,6 @@ int main(int argc, char** argv) {
 
     cv::Mat frame;
 
-    double total_duration = 0.0;
-
     // Get number of frames from video
     int num_frames = cap.get(cv::CAP_PROP_FRAME_COUNT);
 
@@ -112,8 +105,8 @@ int main(int argc, char** argv) {
     uint8_t* prototypes;
     uint8_t* best_prototypes;
 
-    // Matrix for timing results
-    std::vector<std::vector<double>> data(MEASURED_FRAMES, std::vector<double>(1));
+    // Initialize video writer
+    cv::VideoWriter writer;
 
     for (int frame_count = 0; ; frame_count++) {
         cap >> frame;
@@ -151,58 +144,58 @@ int main(int argc, char** argv) {
         }
         // After calibration
         else {
-            double start_time = static_cast<double>(cv::getTickCount());
             k_means_custom_centroids(&params, best_prototypes, false);
-            double end_time = static_cast<double>(cv::getTickCount());
+        }
 
-            if (frame_count >= calibration_frames + WARM_UP_FRAMES) {
-                double duration = (end_time - start_time) / cv::getTickFrequency();
-                total_duration += duration;
-
-                data[frame_count - (calibration_frames + WARM_UP_FRAMES)][0] = duration;
+        // Save result into video file
+        if (!writer.isOpened()) {
+            std::string output_video_path = generateOutputPath(video_path);
+            writer.open(output_video_path, cv::VideoWriter::fourcc('m','p','4','v'), 30, clustered_img.size(), true);
+            if (!writer.isOpened()) {
+                std::cerr << "Could not open the output video for write." << std::endl;
+                return -1;
             }
         }
+        writer.write(clustered_img);
 
         printf("Processed frame %d of %d (%.2f%%)\r", frame_count + 1, num_frames, static_cast<float>(frame_count) / num_frames * 100);
         std::cout.flush();
-
-        if (frame_count >= calibration_frames + WARM_UP_FRAMES + MEASURED_FRAMES - 1 || cv::waitKey(30) >= 0) {
-            break;
-        }
     }
 
     // Free memory
     free(prototypes);
     free(best_prototypes);
 
-    std::cout << "K-means clustering mean time: " << total_duration / MEASURED_FRAMES << " seconds" << std::endl;
-
     cap.release();
+    writer.release();
     cv::destroyAllWindows();
 
-    // Create CSV file
-    std::ofstream file("results/video_calibration.csv");
-    
-    if (!file.is_open()) {
-        std::cerr << "Error opening file!" << std::endl;
-        return 1;
-    }
-
-    // Write header row
-    file << "k-means with calibration\n";
-
-    // Write data rows
-    for (const auto& row : data) {
-        for (size_t i = 0; i < row.size(); ++i) {
-            file << row[i];
-            if (i < row.size() - 1) {
-                file << ",";  // Add comma between values
-            }
-        }
-        file << "\n";  // New line after each row
-    }
-    
-    file.close();
-
     return 0;
+}
+
+std::string generateOutputPath(const std::string& input_video_path) {
+    size_t last_slash = input_video_path.find_last_of("/\\");
+    size_t last_dot = input_video_path.find_last_of(".");
+    
+    std::string directory;
+    std::string filename_without_ext;
+    std::string extension = ".mp4";
+    
+    if (last_slash != std::string::npos) {
+        directory = input_video_path.substr(0, last_slash + 1);
+        if (last_dot != std::string::npos && last_dot > last_slash) {
+            filename_without_ext = input_video_path.substr(last_slash + 1, last_dot - last_slash - 1);
+        } else {
+            filename_without_ext = input_video_path.substr(last_slash + 1);
+        }
+    } else {
+        directory = "./";
+        if (last_dot != std::string::npos) {
+            filename_without_ext = input_video_path.substr(0, last_dot);
+        } else {
+            filename_without_ext = input_video_path;
+        }
+    }
+    
+    return directory + "output_" + filename_without_ext + "_clustered" + extension;
 }

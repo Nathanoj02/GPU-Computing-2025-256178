@@ -8,6 +8,11 @@ extern "C" {
     #include "kmeans.h"
 }
 
+#include <fstream>
+
+#define WARM_UP_RUNS 3
+#define MEASURED_RUNS 10
+
 std::string generateOutputPath(const std::string& input_image_path);
 
 int main(int argc, char** argv) {
@@ -106,25 +111,58 @@ int main(int argc, char** argv) {
         cosine_distance
     };
 
+    // Matrix for timing results
+    std::vector<std::vector<double>> data(MEASURED_RUNS, std::vector<double>(5));
+
     // Time the execution 10 times and mean the result
     for (int func_idx = 0; func_idx < 5; func_idx++)
     {
-        double duration = 0.0;
+        double total_duration = 0.0;
 
-        for (int i = 0; i < 10; i++)
+        for (int i = -WARM_UP_RUNS; i < MEASURED_RUNS; i++)
         {
             double start_time = static_cast<double>(cv::getTickCount());
             k_means(&params, distance_functions[func_idx], 1.5f);
             double end_time = static_cast<double>(cv::getTickCount());
 
-            duration += (end_time - start_time) / cv::getTickFrequency();
+            if (i >= 0)
+            {
+                double duration = (end_time - start_time) / cv::getTickFrequency();
+                total_duration += duration;
+
+                data[i][func_idx] = duration;
+            }
         }
 
-        std::cout << "K-means clustering mean time with distance function " << func_idx << ": " << duration / 10 << " seconds." << std::endl;
+        std::cout << "K-means clustering mean time with distance function " << func_idx << ": " << total_duration / MEASURED_RUNS << " seconds." << std::endl;
 
         std::string output_path = output_image_path + "_" + std::to_string(func_idx) + ".png";
         cv::imwrite(output_path, clustered_img);
     }
+
+    // Create CSV file
+    std::ofstream file("results/baseline.csv");
+    
+    if (!file.is_open()) {
+        std::cerr << "Error opening file!" << std::endl;
+        return 1;
+    }
+
+    // Write header row
+    file << "Squared euclidean distance,Manhattan distance,Chebyshev distance,Minkowski distance,Cosine distance\n";
+
+    // Write data rows
+    for (const auto& row : data) {
+        for (size_t i = 0; i < row.size(); ++i) {
+            file << row[i];
+            if (i < row.size() - 1) {
+                file << ",";  // Add comma between values
+            }
+        }
+        file << "\n";  // New line after each row
+    }
+    
+    file.close();
 
     return 0;
 }
