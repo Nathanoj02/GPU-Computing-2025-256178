@@ -13,6 +13,8 @@ extern "C" {
 #define WARM_UP_FRAMES 5
 #define MEASURED_FRAMES 20
 
+#define PIXEL_THRESHOLD 1000*500    // threshold for switching between algorithms
+
 std::string generateOutputPath(const std::string& input_video_path);
 
 int main(int argc, char** argv) {
@@ -181,8 +183,9 @@ int main(int argc, char** argv) {
     cv::destroyAllWindows();
 
     // Create CSV file
-    std::ofstream file("results/video_calibration.csv");
-    
+    std::string csv_name = "results/calibration_" + std::to_string(std::min(params.img_width, params.img_height)) + ".csv";
+    std::ofstream file(csv_name);
+
     if (!file.is_open()) {
         std::cerr << "Error opening file!" << std::endl;
         return 1;

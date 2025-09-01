@@ -3,6 +3,8 @@
 #include "kmeans.h"
 
 /* ======= K-means core algorithms definitions ======= */
+void _k_means_pp_init (uint8_t *prototypes, KMeansParams* params);
+
 void _k_means_acc (KMeansParams* params, uint8_t* prototypes);
 
 void _k_means_acc_tiled (KMeansParams* params, uint8_t* prototypes);
@@ -29,6 +31,91 @@ void k_means_acc(KMeansParams* params)
 
 void k_means_pp_acc (KMeansParams* params)
 {
+    uint8_t* prototypes = (uint8_t*) malloc (sizeof(uint8_t) * params->k * params->dimensions);
+
+    _k_means_pp_init(prototypes, params);
+
+    _k_means_acc(params, prototypes);
+
+    free (prototypes);
+}
+
+void k_means_pixel_centroid (KMeansParams* params)
+{
+    uint8_t* prototypes = (uint8_t*) malloc (sizeof(uint8_t) * params->k * params->dimensions);
+
+    size_t total_pixels = params->img_height * params->img_width;
+
+    // Select from actual image pixels
+    for (unsigned int j = 0; j < params->k; j++)
+    {
+        size_t first_pixel_idx = rand() % total_pixels;
+        for (unsigned int i = 0; i < params->dimensions; i++) 
+        {
+            prototypes[j * params->dimensions + i] = params->img[first_pixel_idx * params->dimensions + i];
+        }
+    }
+
+    _k_means_acc(params, prototypes);
+
+    free(prototypes);
+}
+
+void k_means_custom_centroids (KMeansParams* params, uint8_t* prototypes, bool calibration_mode)
+{
+    if (calibration_mode) {
+        for (unsigned int i = 0; i < params->k * params->dimensions; i++) {
+            prototypes[i] = rand() % 256;
+        }
+    }
+    
+    // Just call k-means, prototypes are handled externally
+    _k_means_acc_tiled(params, prototypes);
+}
+
+void k_means_acc_tiled (KMeansParams* params)
+{
+    uint8_t* prototypes = (uint8_t*) malloc (sizeof(uint8_t) * params->k * params->dimensions);
+    for (unsigned int i = 0; i < params->k * params->dimensions; i++) 
+    {
+        prototypes[i] = rand() % 256;
+    }
+
+    _k_means_acc_tiled(params, prototypes);
+
+    free (prototypes);
+}
+
+void k_means_acc_check_conv (KMeansParams* params, int check_convergence_step)
+{
+    // Create k prototypes with random values
+    uint8_t* prototypes = (uint8_t*) malloc (sizeof(uint8_t) * params->k * params->dimensions);
+    for (unsigned int i = 0; i < params->k * params->dimensions; i++) 
+    {
+        prototypes[i] = rand() % 256;
+    }
+
+    _k_means_acc_check_conv(params, prototypes, check_convergence_step);
+
+    // Free memory
+    free (prototypes);
+}
+
+void k_means_pp_acc_tiled (KMeansParams* params)
+{
+    uint8_t* prototypes = (uint8_t*) malloc (sizeof(uint8_t) * params->k * params->dimensions);
+
+    _k_means_pp_init(prototypes, params);
+
+    _k_means_acc_tiled(params, prototypes);
+
+    free (prototypes);
+}
+/* ====================================================== */
+
+
+/* ======= K-means core algorithms implementations ======= */
+void _k_means_pp_init (uint8_t *prototypes, KMeansParams* params) {
     // For OpenACC -> Destructure struct (to have better control)
     uint8_t* img = params->img;
     size_t img_height = params->img_height;
@@ -36,7 +123,6 @@ void k_means_pp_acc (KMeansParams* params)
     unsigned int k = params->k;
     unsigned int dimensions = params->dimensions;
 
-    uint8_t* prototypes = (uint8_t*) malloc (sizeof(uint8_t) * k * dimensions);
 
     size_t total_pixels = img_height * img_width;
 
@@ -120,76 +206,8 @@ void k_means_pp_acc (KMeansParams* params)
     
     // Free temporary memory
     free(distances);
-
-    _k_means_acc(params, prototypes);
-
-    free (prototypes);
 }
 
-void k_means_pixel_centroid (KMeansParams* params)
-{
-    uint8_t* prototypes = (uint8_t*) malloc (sizeof(uint8_t) * params->k * params->dimensions);
-
-    size_t total_pixels = params->img_height * params->img_width;
-
-    // Select from actual image pixels
-    for (unsigned int j = 0; j < params->k; j++)
-    {
-        size_t first_pixel_idx = rand() % total_pixels;
-        for (unsigned int i = 0; i < params->dimensions; i++) 
-        {
-            prototypes[j * params->dimensions + i] = params->img[first_pixel_idx * params->dimensions + i];
-        }
-    }
-
-    _k_means_acc(params, prototypes);
-
-    free(prototypes);
-}
-
-void k_means_custom_centroids (KMeansParams* params, uint8_t* prototypes, bool calibration_mode)
-{
-    if (calibration_mode) {
-        for (unsigned int i = 0; i < params->k * params->dimensions; i++) {
-            prototypes[i] = rand() % 256;
-        }
-    }
-    
-    // Just call k-means, prototypes are handled externally
-    _k_means_acc(params, prototypes);
-}
-
-void k_means_acc_tiled (KMeansParams* params)
-{
-    uint8_t* prototypes = (uint8_t*) malloc (sizeof(uint8_t) * params->k * params->dimensions);
-    for (unsigned int i = 0; i < params->k * params->dimensions; i++) 
-    {
-        prototypes[i] = rand() % 256;
-    }
-
-    _k_means_acc_tiled(params, prototypes);
-
-    free (prototypes);
-}
-
-void k_means_acc_check_conv (KMeansParams* params, int check_convergence_step)
-{
-    // Create k prototypes with random values
-    uint8_t* prototypes = (uint8_t*) malloc (sizeof(uint8_t) * params->k * params->dimensions);
-    for (unsigned int i = 0; i < params->k * params->dimensions; i++) 
-    {
-        prototypes[i] = rand() % 256;
-    }
-
-    _k_means_acc_check_conv(params, prototypes, check_convergence_step);
-
-    // Free memory
-    free (prototypes);
-}
-/* ====================================================== */
-
-
-/* ======= K-means core algorithms implementations ======= */
 void _k_means_acc (KMeansParams* params, uint8_t* prototypes)
 {   
     // For OpenACC -> Destructure struct (to have better control)

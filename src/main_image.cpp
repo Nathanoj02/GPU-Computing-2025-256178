@@ -141,8 +141,9 @@ int main(int argc, char** argv) {
     }
 
     // Create CSV file
-    std::ofstream file("results/baseline.csv");
-    
+    std::string csv_name = "results/baseline_" + std::to_string(std::min(params.img_width, params.img_height)) + ".csv";
+    std::ofstream file(csv_name);
+
     if (!file.is_open()) {
         std::cerr << "Error opening file!" << std::endl;
         return 1;

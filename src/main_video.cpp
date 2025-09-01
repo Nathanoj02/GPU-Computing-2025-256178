@@ -98,10 +98,11 @@ int main(int argc, char** argv) {
         k_means_acc,
         k_means_pp_acc,
         k_means_pixel_centroid,
-        k_means_acc_tiled
+        k_means_acc_tiled,
+        k_means_pp_acc_tiled
     };
     
-    int number_of_functions = 6; // Including k_means_acc_check_conv
+    int number_of_functions = 7; // Including k_means_acc_check_conv
 
     // Matrix for timing results
     std::vector<std::vector<double>> data(MEASURED_FRAMES, std::vector<double>(number_of_functions));
@@ -164,15 +165,16 @@ int main(int argc, char** argv) {
     cv::destroyAllWindows();
 
     // Create CSV file
-    std::ofstream file("results/video.csv");
-    
+    std::string csv_name = "results/video_" + std::to_string(std::min(params.img_width, params.img_height)) + ".csv";
+    std::ofstream file(csv_name);
+
     if (!file.is_open()) {
         std::cerr << "Error opening file!" << std::endl;
         return 1;
     }
 
     // Write header row
-    file << "k-means old, k-means, k-means++, k-means pixel centroids, k-means tiled, k-means skip convergence check\n";
+    file << "k-means old, k-means, k-means++, k-means pixel centroids, k-means tiled, k-means++ tiled, k-means skip convergence check\n";
 
     // Write data rows
     for (const auto& row : data) {

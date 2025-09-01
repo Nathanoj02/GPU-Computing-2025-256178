@@ -10,3 +10,8 @@ bin/
 obj/
 
 build
+
+plots/*.png
+results/*.csv
+
+*.nsys-rep
