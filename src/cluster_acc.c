@@ -64,6 +64,7 @@ void k_means_pixel_centroid (KMeansParams* params)
 void k_means_custom_centroids (KMeansParams* params, uint8_t* prototypes, bool calibration_mode)
 {
     if (calibration_mode) {
+        // Randomness for a small amount of frames (and pick the best prototypes) produces better results than k-means++
         for (unsigned int i = 0; i < params->k * params->dimensions; i++) {
             prototypes[i] = rand() % 256;
         }
