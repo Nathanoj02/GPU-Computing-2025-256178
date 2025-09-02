@@ -10,7 +10,8 @@ int main(int argc, char** argv) {
 
     KMeansParams params;
     std::string image_path;
-    
+    std::string alg = "old"; // Default algorithm
+
     // Default values
     params.k = 0;  // Will be set as required
     params.stab_error = 1.0f;   // Convergence threshold
@@ -36,12 +37,16 @@ int main(int argc, char** argv) {
         else if (arg == "-mi" && i + 1 < argc) {
             params.max_iterations = std::stoi(argv[++i]);
         }
+        else if (arg == "-alg" && i + 1 < argc) {
+            alg = argv[++i];
+        }
         else if (arg == "-h" || arg == "--help") {
-            std::cout << "Usage: " << argv[0] << " -k <clusters> -i <image_path> [-e <stab_error>] [-mi <max_iterations>]\n";
+            std::cout << "Usage: " << argv[0] << " -k <clusters> -i <image_path> [-e <stab_error>] [-mi <max_iterations>] [-alg <old|new|tiled>]\n";
             std::cout << "  -k <clusters>      Number of clusters (required)\n";
             std::cout << "  -i <image_path>    Path to input image (required)\n";
             std::cout << "  -e <stab_error>    Stability error threshold (default: 1.0)\n";
             std::cout << "  -mi <max_iterations> Maximum iterations (default: 100)\n";
+            std::cout << "  -alg <old|new|tiled> Algorithm: old, new, or tiled (default: old)\n";
             std::cout << "  -h, --help         Show this help message\n";
             return 0;
         }
@@ -55,7 +60,7 @@ int main(int argc, char** argv) {
     // Check required arguments
     if (!k_set || !image_set) {
         std::cerr << "Error: Both -k and -i arguments are required." << std::endl;
-        std::cerr << "Usage: " << argv[0] << " -k <clusters> -i <image_path> [-e <stab_error>] [-mi <max_iterations>]" << std::endl;
+        std::cerr << "Usage: " << argv[0] << " -k <clusters> -i <image_path> [-e <stab_error>] [-mi <max_iterations>] [-alg <old|new|tiled>]" << std::endl;
         return -1;
     }
     
@@ -90,9 +95,20 @@ int main(int argc, char** argv) {
     params.img = img.data;
     params.dst = clustered_img.data;
 
-    for (int i = 0; i < 10; i++)
-    {
+    // Select implementation based on -alg
+    if (alg == "old") {
+        k_means_acc_old(&params);
+    } 
+    else if (alg == "new") {
         k_means_acc(&params);
+    } 
+    else if (alg == "tiled") {
+        k_means_pp_acc_tiled(&params);
+    } 
+    else {
+        std::cerr << "Unknown algorithm: " << alg << std::endl;
+        std::cerr << "Valid options: old, new, tiled" << std::endl;
+        return -1;
     }
 
     return 0;

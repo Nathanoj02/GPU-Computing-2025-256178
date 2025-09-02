@@ -69,11 +69,6 @@
     ./bin/main_video -k 3 -v dataset/walking_1080.mp4
     ```
 
-    Profile (old) GPU implementation:
-    ```bash
-    ./bin/main_profile -k 3 -v dataset/walking_1080.mp4
-    ```
-
     GPU video calibration implementation:
     ```bash
     ./bin/main_video_calibration -k 3 -v dataset/walking_1080.mp4
@@ -85,6 +80,12 @@
     ```
 
     Most of the script will generate a `.csv` file saving the data for future analysis
+
+    Generate a report with nsys for profiling the (old) GPU implementation:
+    ```bash
+    nsys profile -o profiling_result bin/main_profile -k 3 -i dataset/frame0_1080.png -alg old
+    ```
+    Flag alg has the following possible values: `old`, `new` and `tiled`
 
 ## 📊 Generate Plots
 In the `plots/` folder there's a Jupyter Notebook that read from the `.csv` files and produces plots comparing the different implementations
