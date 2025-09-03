@@ -1,5 +1,11 @@
 # Clustering algorithms on GPUs
 
+## 📦 Dependencies
+- CUDA Toolkit
+- OpenCV for C++
+- NVIDIA HPC SDK
+- [Optional] Python
+
 ## 📥 Download dataset
 
 1. **Download the sample video and image:**
