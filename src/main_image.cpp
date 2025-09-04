@@ -20,6 +20,7 @@ int main(int argc, char** argv) {
 
     KMeansParams params;
     std::string image_path;
+    std::string output_csv_path;
     
     // Default values
     params.k = 0;  // Will be set as required
@@ -27,7 +28,7 @@ int main(int argc, char** argv) {
     params.max_iterations = 100;
     
     // Parse command line arguments
-    bool k_set = false, image_set = false;
+    bool k_set = false, image_set = false, out_set = false;
     
     for (int i = 1; i < argc; i++) {
         std::string arg = argv[i];
@@ -46,12 +47,17 @@ int main(int argc, char** argv) {
         else if (arg == "-mi" && i + 1 < argc) {
             params.max_iterations = std::stoi(argv[++i]);
         }
+        else if (arg == "-out" && i + 1 < argc) {
+            output_csv_path = argv[++i];
+            out_set = true;
+        }
         else if (arg == "-h" || arg == "--help") {
             std::cout << "Usage: " << argv[0] << " -k <clusters> -i <image_path> [-e <stab_error>] [-mi <max_iterations>]\n";
             std::cout << "  -k <clusters>      Number of clusters (required)\n";
             std::cout << "  -i <image_path>    Path to input image (required)\n";
             std::cout << "  -e <stab_error>    Stability error threshold (default: 1.0)\n";
             std::cout << "  -mi <max_iterations> Maximum iterations (default: 100)\n";
+            std::cout << "  -out <output_csv_path> Output csv file path (optional)\n";
             std::cout << "  -h, --help         Show this help message\n";
             return 0;
         }
@@ -65,7 +71,7 @@ int main(int argc, char** argv) {
     // Check required arguments
     if (!k_set || !image_set) {
         std::cerr << "Error: Both -k and -i arguments are required." << std::endl;
-        std::cerr << "Usage: " << argv[0] << " -k <clusters> -i <image_path> [-e <stab_error>] [-mi <max_iterations>]" << std::endl;
+        std::cerr << "Usage: " << argv[0] << " -k <clusters> -i <image_path> [-e <stab_error>] [-mi <max_iterations>] [-out <output_csv_path>]" << std::endl;
         return -1;
     }
     
@@ -141,8 +147,10 @@ int main(int argc, char** argv) {
     }
 
     // Create CSV file
-    std::string csv_name = "results/baseline_" + std::to_string(std::min(params.img_width, params.img_height)) + ".csv";
-    std::ofstream file(csv_name);
+    if (!out_set) {
+        output_csv_path = "results/baseline_" + std::to_string(std::min(params.img_width, params.img_height)) + ".csv";
+    }
+    std::ofstream file(output_csv_path);
 
     if (!file.is_open()) {
         std::cerr << "Error opening file!" << std::endl;

@@ -93,6 +93,26 @@
     ```
     Flag alg has the following possible values: `old`, `new` and `tiled`
 
+### Run with multicore CPU
+- In the `Makefile` &rarr; `CXXFLAGS` and `CFLAGS` (rows 8-9) replace `-acc -gpu=cc75` flag with `-acc=multicore -fast`
+- Compile with `make`
+- Run with:
+  ```bash
+  ACC_NUM_CORES=6 ACC_DEVICE_TYPE=multicore ./bin/main_video -k 3 -v dataset/walking_1080.mp4 -out results/multicore_1080.csv
+  ```
+  You can change the number of cores to fit your CPU
+
+To have all the plots run also the followings:
+```bash
+ACC_NUM_CORES=6 ACC_DEVICE_TYPE=multicore ./bin/main_video -k 3 -v dataset/walking_720.mp4 -out results/multicore_720.csv
+```
+```bash
+ACC_NUM_CORES=6 ACC_DEVICE_TYPE=multicore ./bin/main_video -k 3 -v dataset/walking_480.mp4 -out results/multicore_480.csv
+```
+```bash
+ACC_NUM_CORES=6 ACC_DEVICE_TYPE=multicore ./bin/main_video -k 3 -v dataset/walking_240.mp4 -out results/multicore_240.csv
+```
+
 ## 📊 Generate Plots
 In the `plots/` folder there's a Jupyter Notebook that read from the `.csv` files and produces plots comparing the different implementations
 

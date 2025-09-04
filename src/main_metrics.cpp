@@ -18,13 +18,14 @@ int main(int argc, char** argv) {
 
     KMeansParams params;
     std::string image_path;
+    std::string output_csv_path;
     
     // Default values
     params.stab_error = 1.0f;   // Convergence threshold
     params.max_iterations = 100;
     
     // Parse command line arguments
-    bool image_set = false;
+    bool image_set = false, out_set = false;
     
     for (int i = 1; i < argc; i++) {
         std::string arg = argv[i];
@@ -39,11 +40,16 @@ int main(int argc, char** argv) {
         else if (arg == "-mi" && i + 1 < argc) {
             params.max_iterations = std::stoi(argv[++i]);
         }
+        else if (arg == "-out" && i + 1 < argc) {
+            output_csv_path = argv[++i];
+            out_set = true;
+        }
         else if (arg == "-h" || arg == "--help") {
             std::cout << "Usage: " << argv[0] << " -i <image_path> [-e <stab_error>] [-mi <max_iterations>]\n";
             std::cout << "  -i <image_path>    Path to input image (required)\n";
             std::cout << "  -e <stab_error>    Stability error threshold (default: 1.0)\n";
             std::cout << "  -mi <max_iterations> Maximum iterations (default: 100)\n";
+            std::cout << "  -out <output_csv_path> Output csv file path (optional)\n";
             std::cout << "  -h, --help         Show this help message\n";
             return 0;
         }
@@ -57,7 +63,7 @@ int main(int argc, char** argv) {
     // Check required arguments
     if (!image_set) {
         std::cerr << "Error: -i argument is required." << std::endl;
-        std::cerr << "Usage: " << argv[0] << " -i <image_path> [-e <stab_error>] [-mi <max_iterations>]" << std::endl;
+        std::cerr << "Usage: " << argv[0] << " -i <image_path> [-e <stab_error>] [-mi <max_iterations>] [-out <output_csv_path>]" << std::endl;
         return -1;
     }
 
@@ -113,8 +119,11 @@ int main(int argc, char** argv) {
     cv::destroyAllWindows();
 
     // Create CSV file
-    std::ofstream file("results/metrics.csv");
-    
+    if (!out_set) {
+        output_csv_path = "results/metrics.csv";
+    }
+    std::ofstream file(output_csv_path);
+
     if (!file.is_open()) {
         std::cerr << "Error opening file!" << std::endl;
         return 1;
