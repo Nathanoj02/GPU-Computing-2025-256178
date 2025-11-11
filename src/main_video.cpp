@@ -158,7 +158,7 @@ int main(int argc, char** argv) {
             printf("Processed frame %d of %d (%.2f%%)\r", frame_count + 1, num_frames, static_cast<float>(frame_count) / num_frames * 100);
             std::cout.flush();
 
-            if (frame_count >= WARM_UP_FRAMES + MEASURED_FRAMES - 1 || cv::waitKey(30) >= 0) {
+            if (frame_count >= WARM_UP_FRAMES + MEASURED_FRAMES - 1) {
                 break;
             }
         }
@@ -168,7 +168,6 @@ int main(int argc, char** argv) {
 
 
     cap.release();
-    cv::destroyAllWindows();
 
     // Create CSV file
     if (!out_set) {

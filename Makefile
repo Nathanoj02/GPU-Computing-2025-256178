@@ -5,17 +5,23 @@
 # Compiler and flags
 CXX = nvc++
 CC = nvc
-CXXFLAGS = -std=c++17 -Wall -O2 -g -acc -gpu=cc75 --diag_suppress partial_override
-CFLAGS = -std=c99 -Wall -O2 -g -acc -gpu=cc75
+CXXFLAGS = -std=c++17 -Wall -O2 -g -acc -gpu=cc80 --diag_suppress partial_override
+CFLAGS = -std=c99 -Wall -O2 -g -acc -gpu=cc80
 
 # Profiling flags for Nsight Systems
-PROFILE_CXXFLAGS = -std=c++17 -O2 -g -lineinfo -acc -gpu=cc75 --diag_suppress partial_override
-PROFILE_CFLAGS = -std=c99 -O2 -g -lineinfo -acc -gpu=cc75
-PROFILE_LINKFLAGS = -std=c++17 -O2 -g -acc -gpu=cc75 --diag_suppress partial_override
+PROFILE_CXXFLAGS = -std=c++17 -O2 -g -lineinfo -acc -gpu=cc80 --diag_suppress partial_override
+PROFILE_CFLAGS = -std=c99 -O2 -g -lineinfo -acc -gpu=cc80
+PROFILE_LINKFLAGS = -std=c++17 -O2 -g -acc -gpu=cc80 --diag_suppress partial_override
 
 # OpenCV flags
 OPENCV_CFLAGS = $(shell pkg-config --cflags opencv4)
 OPENCV_LIBS = $(shell pkg-config --libs opencv4)
+
+GCC_LIB_PATH = /opt/shares/easybuild/software/GCCcore/12.3.0/lib64
+
+LDFLAGS = -Wl,-z,noexecstack \
+          -L$(GCC_LIB_PATH) \
+          -Wl,-rpath,$(GCC_LIB_PATH)
 
 # Directories
 SRCDIR = src
@@ -58,7 +64,7 @@ $(OBJDIR)/%.o: $(SRCDIR)/%.c | $(OBJDIR)
 # Rule to link object files to executables
 $(BINDIR)/%: $(OBJDIR)/%.o $(C_OBJECTS) | $(BINDIR)
 	@echo "Linking $@..."
-	@$(CXX) $(CXXFLAGS) $^ -o $@ $(OPENCV_LIBS) -lm
+	@$(CXX) $(CXXFLAGS) $^ -o $@ $(LDFLAGS) $(OPENCV_LIBS) -lm
 	@echo "✓ Build complete: $@"
 
 # Special rule for profiling build of main_profile
@@ -79,7 +85,7 @@ C_OBJECTS_PROFILE = $(patsubst $(SRCDIR)/%.c,$(OBJDIR)/%_prof.o,$(C_SOURCES))
 # Link main_profile with profiling flags
 $(BINDIR)/main_profile: $(OBJDIR)/main_profile_prof.o $(C_OBJECTS_PROFILE) | $(BINDIR)
 	@echo "Linking $@ for profiling..."
-	@$(CXX) $(PROFILE_LINKFLAGS) $^ -o $@ $(OPENCV_LIBS) -lm
+	@$(CXX) $(PROFILE_LINKFLAGS) $^ -o $@ $(LDFLAGS) $(OPENCV_LIBS) -lm
 	@echo "✓ Profiling build complete: $@"
 	@echo "Run with: nsys profile $(BINDIR)/main_profile [args]"
 
