@@ -71,7 +71,7 @@ void k_means_custom_centroids (KMeansParams* params, uint8_t* prototypes, bool c
     }
     
     // Just call k-means, prototypes are handled externally
-    _k_means_acc_tiled(params, prototypes);
+    _k_means_acc(params, prototypes);
 }
 
 void k_means_acc_tiled (KMeansParams* params)
