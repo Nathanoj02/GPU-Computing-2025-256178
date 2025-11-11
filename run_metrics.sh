@@ -3,7 +3,7 @@
 #SBATCH --job-name=metrics
 #SBATCH --output=cluster/output_%j.out
 #SBATCH --error=cluster/error_%j.err
-#SBATCH --partition=edu-short
+#SBATCH --partition=edu-long
 #SBATCH --nodes=1
 #SBATCH --gres=gpu:1
 #SBATCH --ntasks-per-node=1

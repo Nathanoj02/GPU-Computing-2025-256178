@@ -16,6 +16,9 @@ module load OpenCV/4.8.1-foss-2023a-CUDA-12.1.1-contrib
 # Compile
 make
 
+# Get GPU info
+nvidia-smi
+
 # Run executable
 ./bin/main_image -i dataset/frame0_1080.png -k 3
 ./bin/main_image -i dataset/frame0_720.png -k 3
