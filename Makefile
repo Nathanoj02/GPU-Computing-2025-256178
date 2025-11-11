@@ -2,16 +2,19 @@
 # OpenCV C++ Makefile - Compile from src/ to bin/
 # =============================================================================
 
+# Detect GPU compute capability
+GPU_CC := $(shell nvidia-smi --query-gpu=compute_cap --format=csv,noheader | head -1 | tr -d '.')
+
 # Compiler and flags
 CXX = nvc++
 CC = nvc
-CXXFLAGS = -std=c++17 -Wall -O2 -g -acc -gpu=cc80 --diag_suppress partial_override
-CFLAGS = -std=c99 -Wall -O2 -g -acc -gpu=cc80
+CXXFLAGS = -std=c++17 -Wall -O2 -g -acc -gpu=cc$(GPU_CC) --diag_suppress partial_override
+CFLAGS = -std=c99 -Wall -O2 -g -acc -gpu=cc$(GPU_CC)
 
 # Profiling flags for Nsight Systems
-PROFILE_CXXFLAGS = -std=c++17 -O2 -g -lineinfo -acc -gpu=cc80 --diag_suppress partial_override
-PROFILE_CFLAGS = -std=c99 -O2 -g -lineinfo -acc -gpu=cc80
-PROFILE_LINKFLAGS = -std=c++17 -O2 -g -acc -gpu=cc80 --diag_suppress partial_override
+PROFILE_CXXFLAGS = -std=c++17 -O2 -g -lineinfo -acc -gpu=cc$(GPU_CC) --diag_suppress partial_override
+PROFILE_CFLAGS = -std=c99 -O2 -g -lineinfo -acc -gpu=cc$(GPU_CC)
+PROFILE_LINKFLAGS = -std=c++17 -O2 -g -acc -gpu=cc$(GPU_CC) --diag_suppress partial_override
 
 # OpenCV flags
 OPENCV_CFLAGS = $(shell pkg-config --cflags opencv4)

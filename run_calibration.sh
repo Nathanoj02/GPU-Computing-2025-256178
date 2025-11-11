@@ -1,11 +1,11 @@
 #!/bin/bash
 
-#SBATCH --job-name=video_processing
+#SBATCH --job-name=calibration
 #SBATCH --output=cluster/output_%j.out
 #SBATCH --error=cluster/error_%j.err
 #SBATCH --partition=edu-short
+#SBATCH --gres=gpu:a30.24:1
 #SBATCH --nodes=1
-#SBATCH --gres=gpu:1
 #SBATCH --ntasks-per-node=1
 #SBATCH --cpus-per-task=4
 
