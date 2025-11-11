@@ -16,5 +16,8 @@ module load OpenCV/4.8.1-foss-2023a-CUDA-12.1.1-contrib
 # Compile
 make
 
-# Run your executable
-./bin/main_video -v dataset/walking_1080.mp4 -k 3
+# Run executable
+./bin/main_image -i dataset/frame0_1080.png -k 3
+./bin/main_image -i dataset/frame0_720.png -k 3
+./bin/main_image -i dataset/frame0_480.png -k 3
+./bin/main_image -i dataset/frame0_240.png -k 3

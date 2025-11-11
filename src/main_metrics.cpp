@@ -116,8 +116,6 @@ int main(int argc, char** argv) {
         data[k - START_K][1] = silhouette_score;
     }
 
-    cv::destroyAllWindows();
-
     // Create CSV file
     if (!out_set) {
         output_csv_path = "results/metrics.csv";

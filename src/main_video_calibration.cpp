@@ -11,7 +11,7 @@ extern "C" {
 #include <fstream>
 
 #define WARM_UP_FRAMES 5
-#define MEASURED_FRAMES 20
+#define MEASURED_FRAMES 30
 
 #define PIXEL_THRESHOLD 1000*500    // threshold for switching between algorithms
 

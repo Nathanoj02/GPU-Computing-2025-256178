@@ -10,7 +10,7 @@ extern "C" {
 #include <fstream>
 
 #define WARM_UP_FRAMES 5
-#define MEASURED_FRAMES 20
+#define MEASURED_FRAMES 30
 
 int main(int argc, char** argv) {
     srand(0);   // Seed for reproducibility

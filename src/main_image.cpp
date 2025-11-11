@@ -11,7 +11,7 @@ extern "C" {
 #include <fstream>
 
 #define WARM_UP_RUNS 3
-#define MEASURED_RUNS 10
+#define MEASURED_RUNS 30
 
 std::string generateOutputPath(const std::string& input_image_path);
 
