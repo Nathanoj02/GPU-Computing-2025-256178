@@ -7,7 +7,7 @@
 #SBATCH --gres=gpu:a30.24:1
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
-#SBATCH --cpus-per-task=4
+#SBATCH --cpus-per-task=1
 
 # Load required modules
 module load NVHPC/nvhpc/24.7

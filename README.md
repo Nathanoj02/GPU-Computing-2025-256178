@@ -52,6 +52,30 @@
 
 ## 🛠️ Compiling and Running the Programs
 
+### Run on the Cluster
+Output files will go in the folder `cluster/`
+
+Metrics analysis (elbow and silhouette methods):
+```sh
+sbatch run_metrics.sh
+```
+
+Baseline CPU algorithm:
+```sh
+sbatch run_baseline.sh
+```
+
+Video GPU algorithm:
+```sh
+sbatch run_video.sh
+```
+
+Video calibration GPU algorithm:
+```sh
+sbatch run_calibration.sh
+```
+
+### Run on local machine
 1. **Compile everything**
     ```bash
     make
