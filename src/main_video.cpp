@@ -181,7 +181,7 @@ int main(int argc, char** argv) {
     }
 
     // Write header row
-    file << "k-means old, k-means, k-means++, k-means pixel centroids, k-means tiled, k-means++ tiled, k-means skip convergence check\n";
+    file << "k-means old, k-means, k-means++, k-means pixel centroids, k-means tiled, k-means++ reduce, k-means skip convergence check\n";
 
     // Write data rows
     for (const auto& row : data) {

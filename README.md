@@ -115,7 +115,7 @@ sbatch run_calibration.sh
     ```bash
     nsys profile -o profiling_result bin/main_profile -k 3 -i dataset/frame0_1080.png -alg old
     ```
-    Flag alg has the following possible values: `old`, `new` and `tiled`
+    Flag alg has the following possible values: `old`, `new` and `reduce`
 
 ### Run with multicore CPU
 - In the `Makefile` &rarr; `CXXFLAGS` and `CFLAGS` (rows 8-9) replace `-acc -gpu=cc75` flag with `-acc=multicore -fast`
