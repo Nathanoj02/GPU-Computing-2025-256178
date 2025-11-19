@@ -41,12 +41,12 @@ int main(int argc, char** argv) {
             alg = argv[++i];
         }
         else if (arg == "-h" || arg == "--help") {
-            std::cout << "Usage: " << argv[0] << " -k <clusters> -i <image_path> [-e <stab_error>] [-mi <max_iterations>] [-alg <old|new|tiled>]\n";
+            std::cout << "Usage: " << argv[0] << " -k <clusters> -i <image_path> [-e <stab_error>] [-mi <max_iterations>] [-alg <old|new|reduce>]\n";
             std::cout << "  -k <clusters>      Number of clusters (required)\n";
             std::cout << "  -i <image_path>    Path to input image (required)\n";
             std::cout << "  -e <stab_error>    Stability error threshold (default: 1.0)\n";
             std::cout << "  -mi <max_iterations> Maximum iterations (default: 100)\n";
-            std::cout << "  -alg <old|new|tiled> Algorithm: old, new, or tiled (default: old)\n";
+            std::cout << "  -alg <old|new|reduce> Algorithm: old, new, or reduce (default: old)\n";
             std::cout << "  -h, --help         Show this help message\n";
             return 0;
         }
@@ -60,7 +60,7 @@ int main(int argc, char** argv) {
     // Check required arguments
     if (!k_set || !image_set) {
         std::cerr << "Error: Both -k and -i arguments are required." << std::endl;
-        std::cerr << "Usage: " << argv[0] << " -k <clusters> -i <image_path> [-e <stab_error>] [-mi <max_iterations>] [-alg <old|new|tiled>]" << std::endl;
+        std::cerr << "Usage: " << argv[0] << " -k <clusters> -i <image_path> [-e <stab_error>] [-mi <max_iterations>] [-alg <old|new|reduce>]" << std::endl;
         return -1;
     }
     
@@ -102,12 +102,12 @@ int main(int argc, char** argv) {
     else if (alg == "new") {
         k_means_acc(&params);
     } 
-    else if (alg == "tiled") {
-        k_means_pp_acc_tiled(&params);
+    else if (alg == "reduce") {
+        k_means_pp_acc_reduce(&params);
     } 
     else {
         std::cerr << "Unknown algorithm: " << alg << std::endl;
-        std::cerr << "Valid options: old, new, tiled" << std::endl;
+        std::cerr << "Valid options: old, new, reduce" << std::endl;
         return -1;
     }
 

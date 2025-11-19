@@ -105,7 +105,7 @@ int main(int argc, char** argv) {
         k_means_pp_acc,
         k_means_pixel_centroid,
         k_means_acc_tiled,
-        k_means_pp_acc_tiled
+        k_means_pp_acc_reduce
     };
     
     int number_of_functions = 7; // Including k_means_acc_check_conv

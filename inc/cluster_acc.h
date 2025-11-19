@@ -58,11 +58,11 @@ void k_means_acc_tiled (KMeansParams* params);
 void k_means_acc_check_conv (KMeansParams* params, int check_convergence_step);
 
 /**
- * K-means++ clustering algorithm with OpenACC with tiling
+ * K-means++ clustering algorithm with OpenACC with 2-step reduction (instead of atomic operations)
  * 
  * @param params KMeansParams structure containing all parameters
  */
-void k_means_pp_acc_tiled (KMeansParams* params);
+void k_means_pp_acc_reduce (KMeansParams* params);
 
 /**
  * K-means clustering algorithm with OpenACC (original version before fixes)

@@ -10,6 +10,8 @@ void _k_means_acc (KMeansParams* params, uint8_t* prototypes);
 void _k_means_acc_tiled (KMeansParams* params, uint8_t* prototypes);
 
 void _k_means_acc_check_conv (KMeansParams* params, uint8_t* prototypes, int check_convergence_step);
+
+void _k_means_acc_reduce (KMeansParams* params, uint8_t* prototypes);
 /* =================================================== */
 
 
@@ -71,7 +73,7 @@ void k_means_custom_centroids (KMeansParams* params, uint8_t* prototypes, bool c
     }
     
     // Just call k-means, prototypes are handled externally
-    _k_means_acc(params, prototypes);
+    _k_means_acc_reduce(params, prototypes);
 }
 
 void k_means_acc_tiled (KMeansParams* params)
@@ -102,13 +104,13 @@ void k_means_acc_check_conv (KMeansParams* params, int check_convergence_step)
     free (prototypes);
 }
 
-void k_means_pp_acc_tiled (KMeansParams* params)
+void k_means_pp_acc_reduce (KMeansParams* params)
 {
     uint8_t* prototypes = (uint8_t*) malloc (sizeof(uint8_t) * params->k * params->dimensions);
 
     _k_means_pp_init(prototypes, params);
 
-    _k_means_acc_tiled(params, prototypes);
+    _k_means_acc_reduce(params, prototypes);
 
     free (prototypes);
 }
@@ -666,6 +668,197 @@ void _k_means_acc_check_conv (KMeansParams* params, uint8_t* prototypes, int che
 
                 bound_reached = (max_diff_squared <= stab_error);
             }
+        }
+
+        // Final assignment
+        #pragma acc parallel loop collapse(2) present(dst, assigned_img, prototypes) \
+                    gang vector
+        for (size_t i = 0; i < img_height; i++)
+        {
+            for (size_t j = 0; j < img_width; j++)
+            {
+                uint8_t index = assigned_img[i * img_width + j];
+                size_t dst_offset = i * img_width * dimensions + j * dimensions;
+
+                for (unsigned int d = 0; d < dimensions; d++)
+                {
+                    dst[dst_offset + d] = prototypes[index * dimensions + d];
+                }
+            }
+        }
+    }
+    
+    // Free memory
+    free(assigned_img);
+    free(old_prototypes);
+}
+
+
+void _k_means_acc_reduce (KMeansParams* params, uint8_t* prototypes)
+{   
+    // For OpenACC -> Destructure struct (to have better control)
+    uint8_t* dst = params->dst;
+    uint8_t* img = params->img;
+    size_t img_height = params->img_height;
+    size_t img_width = params->img_width;
+    unsigned int k = params->k;
+    unsigned int dimensions = params->dimensions;
+    float stab_error = params->stab_error;
+    int max_iterations = params->max_iterations;
+
+    uint8_t* assigned_img = (uint8_t*) calloc (params->img_height * params->img_width, sizeof(uint8_t));
+    uint8_t* old_prototypes = (uint8_t*) malloc (sizeof(uint8_t) * params->k * params->dimensions);
+
+    size_t total_pixels = params->img_height * params->img_width;
+    
+    bool bound_reached = false;
+
+    #pragma acc data copyin(img[:img_height*img_width*dimensions]) \
+                copy(prototypes[:k*dimensions]) \
+                create(assigned_img[:total_pixels], old_prototypes[:k*dimensions]) \
+                copyout(dst[:img_height*img_width*dimensions])
+    {
+        for (int iteration_count = 0; 
+             !bound_reached && iteration_count < max_iterations; 
+             iteration_count++)
+        {
+            // Save old prototypes
+            #pragma acc parallel loop present(prototypes, old_prototypes)
+            for (unsigned int i = 0; i < k * dimensions; i++) {
+                old_prototypes[i] = prototypes[i];
+            }
+
+            // Pixel assignment phase - find nearest prototype for each pixel
+            #pragma acc parallel loop collapse(2) present(img, prototypes, assigned_img) \
+                        gang vector
+            for (size_t i = 0; i < img_height; i++)
+            {
+                for (size_t j = 0; j < img_width; j++)
+                {
+                    float min_distance = FLT_MAX;
+                    uint8_t assigned_prototype_index = 0;
+                    size_t img_offset = i * img_width * dimensions + j * dimensions;
+
+                    // Find nearest prototype
+                    for (unsigned int p = 0; p < k; p++)
+                    {
+                        float distance = euclidean_distance(
+                            &img[img_offset], 
+                            &prototypes[p * dimensions], 
+                            dimensions,
+                            0
+                        );
+
+                        if (distance < min_distance) {
+                            min_distance = distance;
+                            assigned_prototype_index = p;
+                        }
+                    }
+                    assigned_img[i * img_width + j] = assigned_prototype_index;
+                }
+            }
+
+            // Accumulation phase - sum up pixel values for each cluster
+            // Use 2-step reduction instead of atomic operations
+            uint64_t* sums = (uint64_t*) calloc (k * dimensions, sizeof(uint64_t));
+            uint64_t* counts = (uint64_t*) calloc (k, sizeof(uint64_t));
+
+            #pragma acc data create(sums[:k*dimensions], counts[:k])
+            {
+                // Initialize arrays to zero on device
+                #pragma acc parallel loop present(sums)
+                for (unsigned int i = 0; i < k * dimensions; i++) sums[i] = 0;
+
+                #pragma acc parallel loop present(counts)
+                for (unsigned int i = 0; i < k; i++) counts[i] = 0;
+
+                // Accumulate using reduction - loop over each cluster
+                for (unsigned int cluster_id = 0; cluster_id < k; cluster_id++)
+                {
+                    uint64_t cluster_count = 0;
+
+                    // Count pixels in this cluster using reduction
+                    #pragma acc parallel loop collapse(2) present(assigned_img) \
+                                reduction(+:cluster_count) gang vector
+                    for (size_t i = 0; i < img_height; i++)
+                    {
+                        for (size_t j = 0; j < img_width; j++)
+                        {
+                            if (assigned_img[i * img_width + j] == cluster_id) {
+                                cluster_count++;
+                            }
+                        }
+                    }
+
+                    // Store count
+                    #pragma acc serial present(counts)
+                    {
+                        counts[cluster_id] = cluster_count;
+                    }
+
+                    // Sum each dimension separately using reduction
+                    for (unsigned int d = 0; d < dimensions; d++)
+                    {
+                        uint64_t dim_sum = 0;
+
+                        #pragma acc parallel loop collapse(2) present(img, assigned_img) \
+                                    reduction(+:dim_sum) gang vector
+                        for (size_t i = 0; i < img_height; i++)
+                        {
+                            for (size_t j = 0; j < img_width; j++)
+                            {
+                                if (assigned_img[i * img_width + j] == cluster_id)
+                                {
+                                    size_t img_offset = i * img_width * dimensions + j * dimensions;
+                                    dim_sum += img[img_offset + d];
+                                }
+                            }
+                        }
+
+                        // Store sum for this dimension
+                        #pragma acc serial present(sums)
+                        {
+                            sums[cluster_id * dimensions + d] = dim_sum;
+                        }
+                    }
+                }
+
+                // Update prototypes with new means
+                #pragma acc parallel loop present(prototypes, sums, counts)
+                for (unsigned int i = 0; i < k; i++)
+                {
+                    if (counts[i] != 0)
+                    {
+                        for (unsigned int d = 0; d < dimensions; d++)
+                        {
+                            prototypes[i * dimensions + d] = (uint8_t)((float)sums[i * dimensions + d] / counts[i]);
+                        }
+                    }
+                }
+            }
+
+            free(sums);
+            free(counts);
+
+            // Convergence check - calculate maximum change in prototypes
+            float max_diff_squared = 0.0f;
+            #pragma acc parallel loop present(prototypes, old_prototypes) \
+                        reduction(max:max_diff_squared)
+            for (unsigned int i = 0; i < k; i++)
+            {
+                float distance_squared = squared_euclidean_distance(
+                    &prototypes[i * dimensions],
+                    &old_prototypes[i * dimensions],
+                    dimensions,
+                    0.0f
+                );
+
+                if (distance_squared > max_diff_squared) {
+                    max_diff_squared = distance_squared;
+                }
+            }
+
+            bound_reached = (max_diff_squared <= stab_error);
         }
 
         // Final assignment
