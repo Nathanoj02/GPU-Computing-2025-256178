@@ -168,7 +168,6 @@ int main(int argc, char** argv) {
 
     cap.release();
     writer.release();
-    cv::destroyAllWindows();
 
     return 0;
 }
